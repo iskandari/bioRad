@@ -175,6 +175,7 @@ sample_polar <- function(param, grid_size, range_max, project, ylim, xlim, k = 4
       cellcentre.offset <- -c(range_max, range_max)
       cells.dim <- ceiling(rep(2 * range_max / grid_size, 2))
     } else {
+      browser()
       bbox <- wgs_to_proj(bboxlatlon["lon", ], bboxlatlon["lat", ], proj4string)
       cellcentre.offset <- c(
         min(bbox@coords[, "x"]),
