@@ -163,19 +163,18 @@ sample_polar <- function(param, grid_size, range_max, project, ylim, xlim, k = 4
       c(-range_max, range_max),
       proj4string
     )@bbox
-    print(xlim)
-    print(ylim)
     if (!missing(ylim) & !is.null(ylim)) {
+      print(ylim)
       bboxlatlon["lat", ] <- ylim
     }
     if (!missing(xlim) & !is.null(xlim)) {
+      print(xlim)
       bboxlatlon["lon", ] <- xlim
     }
     if (missing(ylim) & missing(xlim)) {
       cellcentre.offset <- -c(range_max, range_max)
       cells.dim <- ceiling(rep(2 * range_max / grid_size, 2))
     } else {
-      print(bboxlatlon)
       bbox <- wgs_to_proj(bboxlatlon["lon", ], bboxlatlon["lat", ], proj4string)
       cellcentre.offset <- c(
         min(bbox@coords[, "x"]),
