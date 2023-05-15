@@ -163,8 +163,9 @@ sample_polar <- function(param, grid_size, range_max, project, ylim, xlim, k = 4
       c(-range_max, range_max),
       proj4string
     )@bbox
-    print(xlim, ylim)
-    
+    print(xlim)
+    print(ylim)
+
     if (!missing(ylim) & !is.null(ylim)) {
       bboxlatlon["lat", ] <- ylim
     }
