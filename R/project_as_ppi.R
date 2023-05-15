@@ -51,6 +51,7 @@
 project_as_ppi <- function(x, grid_size = 500, range_max = 50000,
                            project = TRUE, ylim = NULL, xlim = NULL, raster = NA, k = 4 / 3, re = 6378, rp = 6357) {
   UseMethod("project_as_ppi", x)
+  print(isNamespaceLoaded("rgdal"))
 }
 
 
@@ -59,10 +60,13 @@ project_as_ppi <- function(x, grid_size = 500, range_max = 50000,
 #' @export
 project_as_ppi.param <- function(x, grid_size = 500, range_max = 50000,
                                  project = TRUE, ylim = NULL, xlim = NULL, raster = NA, k = 4 / 3, re = 6378, rp = 6357) {
+  
   # note: raster argument not used currently, as the raster is parsed through the
   # grid_size argument. May need to be refactored
 
   stopifnot(inherits(x, "param"))
+
+  print(isNamespaceLoaded("rgdal"))
 
   data <- sample_polar(x, grid_size, range_max, project, ylim, xlim, k = k, re = re, rp = rp)
   # copy the parameter's attributes
@@ -85,8 +89,10 @@ project_as_ppi.param <- function(x, grid_size = 500, range_max = 50000,
 #' @export
 project_as_ppi.scan <- function(x, grid_size = 500, range_max = 50000,
                                 project = TRUE, ylim = NULL, xlim = NULL, raster = NA, k = 4 / 3, re = 6378, rp = 6357) {
+
   stopifnot(inherits(x, "scan"))
 
+  print(isNamespaceLoaded("rgdal"))
   if (!are_equal(raster, NA)) {
     assert_that(inherits(raster, "RasterLayer"))
   }
@@ -137,6 +143,7 @@ project_as_ppi.scan <- function(x, grid_size = 500, range_max = 50000,
 
 sample_polar <- function(param, grid_size, range_max, project, ylim, xlim, k = 4 / 3, re = 6378, rp = 6357) {
   # proj4string=CRS(paste("+proj=aeqd +lat_0=",attributes(param)$geo$lat," +lon_0=",attributes(param)$geo$lon," +ellps=WGS84 +datum=WGS84 +units=m +no_defs",sep=""))
+  print(isNamespaceLoaded("rgdal"))
   proj4string <- CRS(paste("+proj=aeqd +lat_0=", attributes(param)$geo$lat,
     " +lon_0=", attributes(param)$geo$lon,
     " +units=m",
