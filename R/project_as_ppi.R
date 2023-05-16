@@ -244,7 +244,6 @@ sample_polar <- function(param, grid_size, range_max, project, ylim, xlim, k = 4
   output
 }
 
-
 #' A wrapper for \code{\link{spTransform}}.
 #'
 #' @param lon Longitude
