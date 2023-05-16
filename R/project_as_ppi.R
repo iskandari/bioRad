@@ -271,7 +271,7 @@ wgs_to_proj <- function(lon, lat, proj4string) {
 proj_to_wgs <- function(x, y, proj4string) {
   xy <- data.frame(lon = x, lat = y)
   coordinates(xy) <- c("lon", "lat")
-  proj4string(xy) <- proj4string
+  proj4string(xy) <- proj4string 
   res <- spTransform(xy, CRS("+proj=longlat +datum=WGS84"))
   return(res)
 }
