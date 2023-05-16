@@ -60,7 +60,7 @@ project_as_ppi <- function(x, grid_size = 500, range_max = 50000,
 #' @export
 project_as_ppi.param <- function(x, grid_size = 500, range_max = 50000,
                                  project = TRUE, ylim = NULL, xlim = NULL, raster = NA, k = 4 / 3, re = 6378, rp = 6357) {
-  
+
   # note: raster argument not used currently, as the raster is parsed through the
   # grid_size argument. May need to be refactored
 
@@ -176,6 +176,7 @@ sample_polar <- function(param, grid_size, range_max, project, ylim, xlim, k = 4
     } else {
       browser()
       bbox <- wgs_to_proj(bboxlatlon["lon", ], bboxlatlon["lat", ], proj4string)
+      browser()
       cellcentre.offset <- c(
         min(bbox@coords[, "x"]),
         min(bbox@coords[, "y"])
