@@ -153,6 +153,7 @@ sample_polar <- function(param, grid_size, range_max, project, ylim, xlim, k = 4
       gridTopo <- as(grid_size, "SpatialPoints")
     }
   } else {
+    browser()
     bboxlatlon <- proj_to_wgs(
       c(-range_max, range_max),
       c(-range_max, range_max),
