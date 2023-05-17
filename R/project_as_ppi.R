@@ -92,7 +92,6 @@ project_as_ppi.scan <- function(x, grid_size = 500, range_max = 50000,
 
   stopifnot(inherits(x, "scan"))
 
-  print(isNamespaceLoaded("rgdal"))
   if (!are_equal(raster, NA)) {
     assert_that(inherits(raster, "RasterLayer"))
   }
