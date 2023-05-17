@@ -40,7 +40,6 @@ Imports:
     methods,
     raster,
     readr,
-    rgdal,
     rhdf5,
     sp,
     stats,
