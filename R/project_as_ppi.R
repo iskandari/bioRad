@@ -255,8 +255,8 @@ wgs_to_proj <- function(lon, lat, proj4string) {
   # Check if the result is a SpatialPointsDataFrame
   if (inherits(res, "SpatialPointsDataFrame")) {
     # If it is, convert it to a SpatialPoints object
-    rownames(res@bbox) <- c('lon', 'lat')
-    colnames(res@coords) <- c('lon', 'lat')
+    rownames(res@bbox) <- c('x', 'y')
+    colnames(res@coords) <- c('x', 'y')
     res <- SpatialPoints(coords=res@coords, proj4string=res@proj4string, bbox=res@bbox)
   }
   return(res)
