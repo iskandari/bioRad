@@ -1,4 +1,5 @@
 #' @keywords internal
+#' @usage NULL
 #' A wrapper for spTransform
 #'
 #' This function calls spTransform, setting the sp_evolution_status option to 2L.
