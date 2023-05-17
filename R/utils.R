@@ -1,3 +1,5 @@
+options("sp_evolution_status" = 2L)
+
 #' @keywords internal
 #' A wrapper for spTransform
 #'
