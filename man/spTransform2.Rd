@@ -16,3 +16,4 @@ sp_evolution_status set to 2L.
 \description{
 This function calls spTransform, setting the sp_evolution_status option to 2L.
 }
+\keyword{internal}
