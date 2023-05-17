@@ -41,6 +41,7 @@ Imports:
     raster,
     readr,
     rhdf5,
+    sf,
     sp,
     stats,
     tidyr,
