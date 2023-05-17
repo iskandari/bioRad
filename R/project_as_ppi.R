@@ -51,7 +51,6 @@
 project_as_ppi <- function(x, grid_size = 500, range_max = 50000,
                            project = TRUE, ylim = NULL, xlim = NULL, raster = NA, k = 4 / 3, re = 6378, rp = 6357) {
   UseMethod("project_as_ppi", x)
-  print(isNamespaceLoaded("rgdal"))
 }
 
 
@@ -65,8 +64,6 @@ project_as_ppi.param <- function(x, grid_size = 500, range_max = 50000,
   # grid_size argument. May need to be refactored
 
   stopifnot(inherits(x, "param"))
-
-  print(isNamespaceLoaded("rgdal"))
 
   data <- sample_polar(x, grid_size, range_max, project, ylim, xlim, k = k, re = re, rp = rp)
   # copy the parameter's attributes
@@ -162,11 +159,9 @@ sample_polar <- function(param, grid_size, range_max, project, ylim, xlim, k = 4
       proj4string
     )@bbox
     if (!missing(ylim) & !is.null(ylim)) {
-      print(ylim)
       bboxlatlon["lat", ] <- ylim
     }
     if (!missing(xlim) & !is.null(xlim)) {
-      print(xlim)
       bboxlatlon["lon", ] <- xlim
     }
     if (missing(ylim) & missing(xlim)) {
