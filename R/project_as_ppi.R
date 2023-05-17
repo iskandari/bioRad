@@ -169,7 +169,6 @@ sample_polar <- function(param, grid_size, range_max, project, ylim, xlim, k = 4
     } else {
 
       bbox <- wgs_to_proj(bboxlatlon["lon", ], bboxlatlon["lat", ], proj4string)
-
       cellcentre.offset <- c(
         min(bbox@coords[, "x"]),
         min(bbox@coords[, "y"])
