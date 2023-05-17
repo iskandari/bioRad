@@ -141,7 +141,7 @@ project_as_ppi.scan <- function(x, grid_size = 500, range_max = 50000,
 
 sample_polar <- function(param, grid_size, range_max, project, ylim, xlim, k = 4 / 3, re = 6378, rp = 6357) {
   # proj4string=CRS(paste("+proj=aeqd +lat_0=",attributes(param)$geo$lat," +lon_0=",attributes(param)$geo$lon," +ellps=WGS84 +datum=WGS84 +units=m +no_defs",sep=""))
-  print(isNamespaceLoaded("rgdal"))
+
   proj4string <- CRS(paste("+proj=aeqd +lat_0=", attributes(param)$geo$lat,
     " +lon_0=", attributes(param)$geo$lon,
     " +units=m",
