@@ -2,6 +2,9 @@
 .Rhistory
 .Rapp.history
 
+#Workflow files
+/.github
+
 # Session Data files
 .RData
 
