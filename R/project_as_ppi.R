@@ -174,9 +174,9 @@ sample_polar <- function(param, grid_size, range_max, project, ylim, xlim, k = 4
       cellcentre.offset <- -c(range_max, range_max)
       cells.dim <- ceiling(rep(2 * range_max / grid_size, 2))
     } else {
-      browser()
+
       bbox <- wgs_to_proj(bboxlatlon["lon", ], bboxlatlon["lat", ], proj4string)
-      browser()
+
       cellcentre.offset <- c(
         min(bbox@coords[, "x"]),
         min(bbox@coords[, "y"])
@@ -258,6 +258,10 @@ wgs_to_proj <- function(lon, lat, proj4string) {
   coordinates(xy) <- c("x", "y")
   proj4string(xy) <- CRS("+proj=longlat +datum=WGS84")
   res <- spTransform(xy, proj4string)
+    #convert back to SpatialPoints object should rgdal be loaded into namespace
+    if(class(res)=='SpatialPointsDataFrame'){ 
+      res<-SpatialPoints(coords=res@coords, proj4string=proj4string, bbox=res@bbox)
+    }
   return(res)
 }
 
@@ -273,8 +277,10 @@ proj_to_wgs <- function(x, y, proj4string) {
   coordinates(xy) <- c("lon", "lat")
   proj4string(xy) <- proj4string 
   res <- spTransform(xy, CRS("+proj=longlat +datum=WGS84"))
-  rownames(res@bbox) <-  c("lon", "lat")
-  colnames(res@coords) <-  c("x", "y")
+   #convert back to SpatialPoints object should rgdal be loaded into namespace
+    if(class(res)=='SpatialPointsDataFrame'){ 
+      res<-SpatialPoints(coords=res@coords, proj4string=proj4string, bbox=res@bbox)
+    }
   return(res)
 }
 
