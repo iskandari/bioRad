@@ -218,7 +218,7 @@ integrate_to_ppi <- function(pvol, vp, nx = 100, ny = 100, xlim, ylim, zlim = c(
       sep = ""
     ))
     values(raster) <- 1
-    spdf <- (spTransform(rasterToPoints(raster, spatial = T), localCrs))
+    spdf <- (spTransform2(rasterToPoints(raster, spatial = T), localCrs))
     rasters <- lapply(pvol$scans, function(x) {
       scan_to_spdf(
         add_expected_eta_to_scan(x, vp, param = param, lat = lat, lon = lon, antenna = antenna, beam_angle = beam_angle, k = k, re = re, rp = rp),

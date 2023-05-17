@@ -151,7 +151,7 @@ composite_ppi <- function(x, param = "all", nx = 100, ny = 100, xlim, ylim, res,
     function(x) {
       over(
         suppressWarnings(
-          spTransform(
+          spTransform2(
             spGrid,
             CRS(proj4string(x$data))
           )
@@ -191,7 +191,7 @@ composite_ppi <- function(x, param = "all", nx = 100, ny = 100, xlim, ylim, res,
           d <- data.frame(lon = latlon.radar$lon, lat = latlon.radar$lat)
           coordinates(d) <- c("lon", "lat")
           proj4string(d) <- d_crs
-          proj.radar <- as.data.frame(spTransform(d, t_crs))
+          proj.radar <- as.data.frame(spTransform2(d, t_crs))
           weights <- suppressWarnings(raster::pointDistance(as.matrix(data.frame(x = proj.radar$lon, y = proj.radar$lat))[i, ], coordinates(raster(spGrid)), lonlat = FALSE))
         }
         if(!is.na(idw_max_distance)) weights[weights > idw_max_distance] <- NA

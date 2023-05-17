@@ -159,7 +159,7 @@ scan_to_raster <- function(scan, nx = 100, ny = 100, xlim, ylim, res = NA, param
     # keep only selected scan parameters
     if (!missing(param)) spdf <- spdf[param]
     # transform spatialpoints to coordinate system of the raster
-    if (!missing(crs)) spdf <- spTransform(spdf, crs)
+    if (!missing(crs)) spdf <- spTransform2(spdf, crs)
     # get extent of the available data
     spdf_extent <- raster::extent(spdf)
     # prepare a raster matching the data extent (or user-specified extent)
@@ -177,7 +177,7 @@ scan_to_raster <- function(scan, nx = 100, ny = 100, xlim, ylim, res = NA, param
     }
   }
   # convert raster coordinates to local Cartesian CRS
-  crds <- coordinates(spTransform(rasterToPoints(r, spatial = T), localCrs))
+  crds <- coordinates(spTransform2(rasterToPoints(r, spatial = T), localCrs))
   # convert raster coordinates to polar indices
   polar_coords <- cartesian_to_polar(crds, elev = scan$geo$elangle, k = k, lat = lat, re = re, rp = rp)
   index <- polar_to_index(polar_coords, rangebin = rscale, azimbin = ascale, rangestart = rstart, azimstart = astart)

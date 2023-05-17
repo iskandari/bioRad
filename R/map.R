@@ -158,7 +158,7 @@ map.ppi <- function(x, map, param, alpha = 0.7, xlim, ylim,
   wgs84 <- CRS("+proj=longlat +datum=WGS84")
   epsg3857 <- CRS("+init=epsg:3857") # this is the google mercator projection
   mybbox <- suppressWarnings(
-    spTransform(
+    spTransform2(
       SpatialPoints(t(data@bbox),
         proj4string = data@proj4string
       ),
@@ -166,7 +166,7 @@ map.ppi <- function(x, map, param, alpha = 0.7, xlim, ylim,
     )
   )
   mybbox.wgs <- suppressWarnings(
-    spTransform(
+    spTransform2(
       SpatialPoints(t(data@bbox),
         proj4string = data@proj4string
       ),
@@ -181,7 +181,7 @@ map.ppi <- function(x, map, param, alpha = 0.7, xlim, ylim,
 
   # convert to google earth mercator projection
   data <- suppressWarnings(
-    as.data.frame(spTransform(data, CRS("+init=epsg:3857")))
+    as.data.frame(spTransform2(data, CRS("+init=epsg:3857")))
   )
   # bring z-values within plotting range
   index <- which(data$z < zlim[1])

@@ -98,7 +98,7 @@ project_as_ppi.scan <- function(x, grid_size = 500, range_max = 50000,
       " +units=m",
       sep = ""
     ))
-    grid_size <- spTransform(as(as(raster, "SpatialGrid"), "SpatialPoints"), proj4string)
+    grid_size <- spTransform2(as(as(raster, "SpatialGrid"), "SpatialPoints"), proj4string)
   }
   data <- sample_polar(
     x$params[[1]], grid_size, range_max,
@@ -145,7 +145,7 @@ sample_polar <- function(param, grid_size, range_max, project, ylim, xlim, k = 4
   ))
   if (inherits(grid_size, c("RasterLayer", "SpatialPoints"))) {
     if (proj4string(grid_size) != as.character(proj4string)) {
-      gridTopo <- spTransform(as(as(grid_size, "SpatialGrid"), "SpatialPoints"), proj4string)
+      gridTopo <- spTransform2(as(as(grid_size, "SpatialGrid"), "SpatialPoints"), proj4string)
     } else if (inherits(grid_size, "RasterLayer")) {
       gridTopo <- as(as(grid_size, "SpatialGrid"), "SpatialPoints")
     } else {
@@ -237,7 +237,7 @@ sample_polar <- function(param, grid_size, range_max, project, ylim, xlim, k = 4
   output
 }
 
-#' A wrapper for [spTransform()].
+#' A wrapper for [spTransform2()].
 #'
 #' @param lon Longitude
 #' @param lat Latitude
@@ -250,7 +250,7 @@ wgs_to_proj <- function(lon, lat, proj4string) {
   xy <- data.frame(x = lon, y = lat)
   coordinates(xy) <- c("x", "y")
   proj4string(xy) <- CRS("+proj=longlat +datum=WGS84")
-  res <- spTransform(xy, proj4string)
+  res <- spTransform2(xy, proj4string)
   # Check if the result is a SpatialPointsDataFrame
   if (inherits(res, "SpatialPointsDataFrame")) {
     # If it is, convert it to a SpatialPoints object
@@ -261,7 +261,7 @@ wgs_to_proj <- function(lon, lat, proj4string) {
   return(res)
 }
 
-#' A wrapper for [spTransform()].
+#' A wrapper for [spTransform2()].
 #'
 #' @param x Longitude
 #' @param y Latitude
@@ -272,7 +272,7 @@ proj_to_wgs <- function(x, y, proj4string) {
   xy <- data.frame(lon = x, lat = y)
   coordinates(xy) <- c("lon", "lat")
   proj4string(xy) <- proj4string 
-  res <- spTransform(xy, CRS("+proj=longlat +datum=WGS84"))
+  res <- spTransform2(xy, CRS("+proj=longlat +datum=WGS84"))
   # Check if the result is a SpatialPointsDataFrame
   if (inherits(res, "SpatialPointsDataFrame")) {
     # If it is, convert it to a SpatialPoints object and correct names
