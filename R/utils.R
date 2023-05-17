@@ -1,3 +1,4 @@
+#' @keywords internal
 #' A wrapper for spTransform
 #'
 #' This function calls spTransform, setting the sp_evolution_status option to 2L.
@@ -8,8 +9,6 @@
 #'   sp_evolution_status set to 2L.
 #'
 #' @export
-#' @keywords internal
-#' @usage NULL
 spTransform2 <- function(...) {
   withr::with_options(list(sp_evolution_status = 2L), sp::spTransform(...))
 }
