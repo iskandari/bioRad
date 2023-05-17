@@ -13,7 +13,9 @@ vignette: >
 Load bioRad
 
 ```{r}
+options("sp_evolution_status" = 2L)
 library(bioRad)
+
 ```
 
 ## 2 Beam propagation
