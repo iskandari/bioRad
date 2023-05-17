@@ -24,8 +24,6 @@
 #' write_pvolfile(example_pvol, pvolfile_out)
 #' }
 write_pvolfile <- function(pvol, file, overwrite = FALSE, infer_dtype = FALSE) {
-  print(getOption("sp_evolution_status"))
-  print(paste("RGDAL IS LOADED:", isNamespaceLoaded("rgdal")))
   assert_that(is.pvol(pvol))
   if (!overwrite) {
     assert_that(!file.exists(file),
