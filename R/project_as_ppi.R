@@ -53,7 +53,6 @@ project_as_ppi <- function(x, grid_size = 500, range_max = 50000,
   UseMethod("project_as_ppi", x)
 }
 
-
 #' @describeIn project_as_ppi Project as \code{ppi} for a single scan parameter.
 #'
 #' @export
