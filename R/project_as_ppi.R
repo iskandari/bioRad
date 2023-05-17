@@ -256,6 +256,8 @@ wgs_to_proj <- function(lon, lat, proj4string) {
   # Check if the result is a SpatialPointsDataFrame
   if (inherits(res, "SpatialPointsDataFrame")) {
     # If it is, convert it to a SpatialPoints object
+    rownames(res@bbox) <- c('lon', 'lat')
+    colnames(res@coords) <- c('lon', 'lat')
     res <- SpatialPoints(coords=res@coords, proj4string=res@proj4string, bbox=res@bbox)
   }
   return(res)
@@ -275,7 +277,9 @@ proj_to_wgs <- function(x, y, proj4string) {
   res <- spTransform(xy, CRS("+proj=longlat +datum=WGS84"))
   # Check if the result is a SpatialPointsDataFrame
   if (inherits(res, "SpatialPointsDataFrame")) {
-    # If it is, convert it to a SpatialPoints object
+    # If it is, convert it to a SpatialPoints object and correct names
+    rownames(res@bbox) <- c('lon', 'lat')
+    colnames(res@coords) <- c('lon', 'lat')
     res <- SpatialPoints(coords=res@coords, proj4string=res@proj4string, bbox=res@bbox)
   }
   return(res)
