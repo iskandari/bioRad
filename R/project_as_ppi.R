@@ -257,10 +257,11 @@ wgs_to_proj <- function(lon, lat, proj4string) {
   coordinates(xy) <- c("x", "y")
   proj4string(xy) <- CRS("+proj=longlat +datum=WGS84")
   res <- spTransform(xy, proj4string)
-    #convert back to SpatialPoints object should rgdal be loaded into namespace
-    if(class(res)=='SpatialPointsDataFrame'){ 
-      res<-SpatialPoints(coords=res@coords, proj4string=proj4string, bbox=res@bbox)
-    }
+  # Check if the result is a SpatialPointsDataFrame
+  if (inherits(res, "SpatialPointsDataFrame")) {
+    # If it is, convert it to a SpatialPoints object
+    res <- SpatialPoints(coords=res@coords, proj4string=proj4string, bbox=res@bbox)
+  }
   return(res)
 }
 
@@ -276,10 +277,11 @@ proj_to_wgs <- function(x, y, proj4string) {
   coordinates(xy) <- c("lon", "lat")
   proj4string(xy) <- proj4string 
   res <- spTransform(xy, CRS("+proj=longlat +datum=WGS84"))
-   #convert back to SpatialPoints object should rgdal be loaded into namespace
-    if(class(res)=='SpatialPointsDataFrame'){ 
-      res<-SpatialPoints(coords=res@coords, proj4string=proj4string, bbox=res@bbox)
-    }
+  # Check if the result is a SpatialPointsDataFrame
+  if (inherits(res, "SpatialPointsDataFrame")) {
+    # If it is, convert it to a SpatialPoints object
+    res <- SpatialPoints(coords=res@coords, proj4string=proj4string, bbox=res@bbox)
+  }
   return(res)
 }
 
