@@ -4,7 +4,7 @@
 \alias{spTransform2}
 \title{A wrapper for spTransform}
 \usage{
-spTransform2(...)
+spTransform2(x, CRSobj, ...)
 }
 \arguments{
 \item{...}{Parameters to be passed to spTransform.}
