@@ -8,7 +8,6 @@
 #'   sp_evolution_status set to 2L.
 #'
 #' @keywords internal
-#' @export
-spTransform2 <- function(...) {
-  withr::with_options(list(sp_evolution_status = 2L), sp::spTransform(...))
+spTransform2 <- function(x, CRSobj, ...) {
+       as(sf::st_transform(sf::st_as_sf(x), sf::st_crs(CRSobj)), "Spatial")
 }
