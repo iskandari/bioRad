@@ -16,7 +16,7 @@
     <loc>https://adriaandokter.com/bioRad/articles/index.html</loc>
   </url>
   <url>
-    <loc>https://adriaandokter.com/bioRad/articles/rad_aero_19.html</loc>
+    <loc>https://adriaandokter.com/bioRad/articles/rad_aero_22.html</loc>
   </url>
   <url>
     <loc>https://adriaandokter.com/bioRad/articles/range_correction.html</loc>
@@ -41,6 +41,9 @@
   </url>
   <url>
     <loc>https://adriaandokter.com/bioRad/reference/as.data.frame.vp.html</loc>
+  </url>
+  <url>
+    <loc>https://adriaandokter.com/bioRad/reference/as.vpts.html</loc>
   </url>
   <url>
     <loc>https://adriaandokter.com/bioRad/reference/attribute_table.html</loc>
@@ -217,6 +220,9 @@
     <loc>https://adriaandokter.com/bioRad/reference/read_pvolfile.html</loc>
   </url>
   <url>
+    <loc>https://adriaandokter.com/bioRad/reference/read_stdout.html</loc>
+  </url>
+  <url>
     <loc>https://adriaandokter.com/bioRad/reference/read_vp.html</loc>
   </url>
   <url>
@@ -248,9 +254,6 @@
   </url>
   <url>
     <loc>https://adriaandokter.com/bioRad/reference/sub-.ppi.html</loc>
-  </url>
-  <url>
-    <loc>https://adriaandokter.com/bioRad/reference/sub-.vpts.html</loc>
   </url>
   <url>
     <loc>https://adriaandokter.com/bioRad/reference/summary.param.html</loc>
