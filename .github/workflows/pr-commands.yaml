@@ -36,15 +36,18 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::roxygen2
+          extra-packages: |
+            any::roxygen2
+            any::remotes
           needs: pr-document
 
       - name: Install the documentation generator recorded in DESCRIPTION
         run: |
           version <- read.dcf("DESCRIPTION")[1, "Config/roxygen2/version"]
           if (as.character(utils::packageVersion("roxygen2")) != version) {
-            url <- sprintf("https://cloud.r-project.org/src/contrib/Archive/roxygen2/roxygen2_%s.tar.gz", version)
-            utils::install.packages(url, repos = NULL, type = "source")
+            remotes::install_version("roxygen2", version = version,
+              repos = "https://cloud.r-project.org", upgrade = "never",
+              dependencies = NA)
           }
           stopifnot(as.character(utils::packageVersion("roxygen2")) == version)
         shell: Rscript {0}
