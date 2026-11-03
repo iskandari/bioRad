@@ -72,7 +72,7 @@
 #' composite <- composite_ppi(ppis, method = "max", res=1000)
 #'
 #' # Plot the calculated max product on the basemap
-#' if (all(sapply(c("ggspatial","prettymapr", "rosm"), requireNamespace, quietly = TRUE))) {
+#' if (all(sapply(c("ggspatial", "prettymapr", "rosm"), requireNamespace, quietly = TRUE))) {
 #' map(composite)
 #' }
 #' }
@@ -130,9 +130,9 @@ composite_ppi <-
   } else {
     t_res <- NULL
   }
-  # check crs argument as in raster::raster()
+  # normalize modern and legacy CRS inputs
   if (!missing(crs)) {
-    t_crs <- sp::CRS(as.character(raster::projection(crs)))
+    t_crs <- .spatial_crs(crs)
   } else {
     t_crs <- NULL
   }
@@ -162,132 +162,61 @@ composite_ppi <-
     ncol = 2, dimnames = dimnames(ppis[[1]]$geo$bbox)
   )
 
-  if (!assertthat::are_equal(raster, NA)) {
-    r <- raster::raster(raster)
+  if (!identical(raster, NA)) {
+    r <- terra::rast(.spatial_raster(raster), nlyrs = 1)
   } else {
-    d_crs <- sp::CRS("+proj=longlat +datum=WGS84")
-    if (!is.null(t_res) && !is.null(t_crs)) {
-
-      r <- raster::raster(ext = raster::extent(c(min(lons), max(lons), min(lats), max(lats))), crs = t_crs, resolution = t_res)
-    } else if (!is.null(t_crs) && is.null(t_res)) {
-      r <- raster::raster(ncols = nx, nrows = ny, ext = raster::extent(c(min(lons), max(lons), min(lats), max(lats))), crs = t_crs)
-    } else if (is.null(t_crs) && !is.null(t_res)) {
-      r <- raster::raster(ext = raster::extent(c(min(lons), max(lons), min(lats), max(lats))), crs = d_crs)
-      t_crs <- sp::CRS(paste0("+proj=aeqd +units=m +ellps=WGS84 +lat_0=", mean(lats), " +lon_0=", mean(lons)))
-      r <- raster::projectExtent(r, t_crs)
-      raster::res(r) <- t_res
-    } else {
-      r <- raster::raster(ncols = nx, nrows = ny, ext = raster::extent(c(min(lons), max(lons), min(lats), max(lats))), crs = d_crs)
+    r <- terra::rast(ncols = nx, nrows = ny,
+      ext = terra::ext(min(lons), max(lons), min(lats), max(lats)), crs = "EPSG:4326")
+    if (is.null(t_crs) && !is.null(t_res)) {
+      t_crs <- paste0("+proj=aeqd +units=m +ellps=WGS84 +lat_0=", mean(lats), " +lon_0=", mean(lons))
     }
+    if (!is.null(t_crs)) r <- terra::project(r, t_crs)
+    if (!is.null(t_res)) terra::res(r) <- t_res
   }
-
-  # initialize all values of the grid to NA
-  suppressWarnings(r <- raster::setValues(r, NA))
-  assertthat::assert_that(dim(r)[1] > 1, msg = "output raster has only a single pixel in x dimension, increase raster resolution")
-  assertthat::assert_that(dim(r)[2] > 1, msg = "output raster has only a single pixel in y dimension, increase raster resolution")
-
-  spGrid = methods::as(r, 'SpatialGridDataFrame')
-
-  names(spGrid@data) <- names(ppis[[1]]$data)[1]
-
-  if (coverage) {
-    ppis <-
-      lapply(ppis, function(x) {
-        x$data$coverage <- 1
-        return(x)
-      })
-    param <- c(param, "coverage")
-  }
-
-  # merge
-  projs <- sapply(ppis,
-    function(x) {
-      source <- methods::as(
-        raster::brick(x$data[[param]]),
-        "SpatialGridDataFrame"
-      )
-      sp::over(
-        suppressWarnings(
-          sp::spTransform(
-            spGrid,
-            sp::CRS(sp::proj4string(source))
-          )
-        ),
-        source
-      )
+  assertthat::assert_that(terra::ncol(r) > 1, msg = "output raster has only a single pixel in x dimension, increase raster resolution")
+  assertthat::assert_that(terra::nrow(r) > 1, msg = "output raster has only a single pixel in y dimension, increase raster resolution")
+  points <- .raster_points(r)
+  # Sample source cells at target centres, preserving the original nearest-cell semantics.
+  projs <- lapply(ppis, function(x) {
+    source <- .spatial_raster(x$data)
+    pts <- terra::vect(sf::st_transform(points, terra::crs(source)))
+    data <- terra::extract(source, pts, ID = FALSE)
+    if (coverage) {
+      xy <- terra::crds(pts)
+      data$coverage <- as.numeric(!is.na(terra::cellFromXY(source, xy)))
     }
-  )
-
+    data
+  })
+  result <- list()
   for (p in param) {
-    if (p == "coverage") next()
-    if (length(param) > 1) {
-      merged <- projs[p, ]
-    } else {
-      merged <- projs
-    }
-
-    if (length(method) > 1) {
-      param_method <- method[match(p, param)]
-    } else {
-      param_method <- method
-    }
-
-    if (param_method == "max") {
-      spGrid@data[, p] <-
-        do.call(function(...)
-          pmax(..., na.rm = TRUE), merged)
-    }
-    if (param_method == "min") {
-      spGrid@data[, p] <-
-        do.call(function(...)
-          pmin(..., na.rm = TRUE), merged)
-    }
-    if (param_method == "mean") {
-      as.data.frame(merged) %>% rowMeans(na.rm = TRUE) ->
-        spGrid@data[, p]
-    }
+    values <- do.call(cbind, lapply(projs, `[[`, p))
+    param_method <- if (length(method) == 1) method else method[match(p, param)]
     if (param_method == "idw") {
-      brick_data <-
-        suppressWarnings(
-          raster::brick(raster::brick(spGrid), nl = length(merged))
-          )
-      brick_weights <- brick_data
-
-      #weights<-raster::pointDistance(as.matrix(data.frame(x=lons.radar,y=lats.radar)), sp::coordinates(raster::raster(spGrid)),lonlat=TRUE)
-      for(i in 1:length(merged)){
-        brick_data <- raster::setValues(brick_data, merged[[i]], layer=i)
-        latlon.radar <- unique(data.frame(lat = c(lats.radar), lon = c(lons.radar)))
-        if (is.null(t_res)) {
-          weights <- suppressWarnings(raster::pointDistance(as.matrix(data.frame(x = latlon.radar$lon, y = latlon.radar$lat))[i, ], sp::coordinates(raster::raster(spGrid)), lonlat = TRUE))
-        } else {
-          d <- data.frame(lon = latlon.radar$lon, lat = latlon.radar$lat)
-          sp::coordinates(d) <- c("lon", "lat")
-          sp::proj4string(d) <- d_crs
-          proj.radar <- as.data.frame(sp::spTransform(d, t_crs))
-          weights <- suppressWarnings(raster::pointDistance(as.matrix(data.frame(x = proj.radar[,1], y = proj.radar[,2]))[i, ], sp::coordinates(raster::raster(spGrid)), lonlat = FALSE))
-
-        }
-        if (!is.na(idw_max_distance)) weights[weights > idw_max_distance] <- NA
-        weights <- 1 / (weights^idp)
-        brick_weights <- raster::setValues(brick_weights, weights, layer = i)
-      }
-      spGrid@data[, p] <-
-        as.vector(
-          raster::weighted.mean(brick_data, brick_weights, na.rm = TRUE)
-        )
+      # Distance in metres, including when the target CRS is geographic.
+      weights <- vapply(ppis, function(x) {
+        radar <- sf::st_as_sf(data.frame(lon = x$geo$lon[1], lat = x$geo$lat[1]),
+          coords = c("lon", "lat"), crs = 4326)
+        d <- as.numeric(sf::st_distance(sf::st_transform(points, 4326), radar))
+        if (!is.na(idw_max_distance)) d[d > idw_max_distance] <- NA_real_
+        1 / d^idp
+      }, numeric(nrow(points)))
+      weights[is.na(values)] <- NA_real_
+      # At a radar centre use only the coincident radar(s).
+      zero <- rowSums(is.infinite(weights)) > 0
+      weights[zero, ] <- ifelse(is.infinite(weights[zero, , drop = FALSE]), 1, 0)
+      result[[p]] <- rowSums(values * weights, na.rm = TRUE) / rowSums(weights, na.rm = TRUE)
+    } else {
+      result[[p]] <- switch(param_method,
+        mean = rowMeans(values, na.rm = TRUE),
+        max = do.call(pmax, c(as.data.frame(values), na.rm = TRUE)),
+        min = do.call(pmin, c(as.data.frame(values), na.rm = TRUE)))
     }
+    result[[p]][rowSums(!is.na(values)) == 0] <- NA_real_
   }
-
-  if (coverage) {
-    cov <- !is.na(do.call("cbind", projs["coverage", ]))
-    spGrid@data$coverage <- rowSums(cov)
-  }
-
-  ppi.out <- list(data = terra::rast(spGrid), geo = list(
-    lat = lats.radar, lon = lons.radar,
-    elangle = elangles, bbox = bbox,
-    merged = TRUE
-  ))
-  class(ppi.out) <- "ppi"
-  ppi.out
+  if (coverage) result$coverage <- rowSums(do.call(cbind, lapply(projs, `[[`, "coverage")))
+  output <- terra::rast(r, nlyrs = length(result))
+  terra::values(output) <- as.data.frame(result)
+  names(output) <- names(result)
+  structure(list(data = output, geo = list(lat = lats.radar, lon = lons.radar,
+    elangle = elangles, bbox = .raster_bbox(output), merged = TRUE)), class = "ppi")
 }

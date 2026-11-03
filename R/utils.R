@@ -28,7 +28,7 @@ is.nan.data.frame <- function(x) {
 #' @returns Invisibly returns TRUE if dependencies available, otherwise skips the test with a message "map() dependencies (ggspatial, prettymapr, rosm) not installed".
 #' @noRd
 skip_if_no_mapping <- function() {
-  if (all(sapply(c("ggspatial","prettymapr", "rosm"), requireNamespace, quietly = TRUE))){
+  if (all(sapply(c("ggspatial", "prettymapr", "rosm"), requireNamespace, quietly = TRUE))){
      return(invisible(TRUE))
   }
   testthat::skip("map() dependencies (ggspatial, prettymapr, rosm) not installed")

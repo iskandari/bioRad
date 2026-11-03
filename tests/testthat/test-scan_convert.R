@@ -1,4 +1,6 @@
 test_that("legacy scan conversion functions are deprecated", {
+  skip_if_not_installed("sp")
+  skip_if_not_installed("raster")
   points <- sf::as_Spatial(scan_to_sf(example_scan))
 
   lifecycle::expect_deprecated(scan_to_spatial(example_scan))
@@ -106,15 +108,18 @@ test_that("scan_to_spatraster() raster argument produces expected raster output"
 })
 
 test_that("scan_to_spatraster() accepts raster templates", {
+  skip_if_not_installed("raster")
   template <- raster::raster(scan_to_spatraster(example_scan, ylim = c(55, 57), xlim = c(12, 13), res = .1))
   # a terra SpatRaster template must produce the same output as the equivalent RasterLayer
   from_terra <- scan_to_spatraster(example_scan, raster = terra::rast(template))
-  from_raster <- scan_to_spatraster(example_scan, raster = template)
+  lifecycle::expect_deprecated(from_raster <- scan_to_spatraster(example_scan, raster = template))
   expect_true(terra::compareGeom(from_terra, from_raster, stopOnError = FALSE))
   expect_equal(terra::values(from_terra), terra::values(from_raster))
 })
 
 test_that("new scan conversions preserve legacy output", {
+  skip_if_not_installed("sp")
+  skip_if_not_installed("raster")
   modern_points <- scan_to_sf(example_scan)
   legacy_points <- suppressWarnings(scan_to_spatial(example_scan))
 
@@ -146,7 +151,7 @@ test_that(".scan_to_spdf() returns error error on incorrect parameters",{
 })
 
 test_that(".scan_to_spdf() returns error on wrongly formed param argument",{
-  points <- sf::as_Spatial(scan_to_sf(example_scan))
+  points <- scan_to_sf(example_scan)
   expect_error(bioRad:::.scan_to_spdf(example_scan, param = "unexisting_param",
                             spdf = points),
                regexp = "'param' contains scan parameter not found in scan",

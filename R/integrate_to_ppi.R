@@ -24,7 +24,7 @@
 #'   estimated in `vp`. Either `DBZH`, `DBZV`, `DBZ`, `TH`, or `TV`.
 #' @param lat Latitude of the radar, in degrees. If missing taken from `pvol`.
 #' @param lon Latitude of the radar, in degrees. If missing taken from `pvol`.
-#' @param raster (optional) `raster::RasterLayer` or `terra::SpatRaster` with a CRS. When specified
+#' @param raster (optional) `terra::SpatRaster` (legacy `RasterLayer` inputs are deprecated) with a CRS. When specified
 #' this raster topology is used for the output, and nx, ny, res arguments are ignored.
 #' When `height_reference = "ground"` the raster values should contain
 #' the ground height digital elevation in meters.
@@ -118,19 +118,16 @@
 #' plot(ppi, param = "VID", zlim = c(0, 200))
 #'
 #' # Download a basemap and map the ppi
-#' if (all(sapply(c("ggspatial","prettymapr", "rosm"), requireNamespace, quietly = TRUE))) {
+#' if (all(sapply(c("ggspatial", "prettymapr", "rosm"), requireNamespace, quietly = TRUE))) {
 #' map(ppi)
 #' # First define the raster
-#' template_raster <- raster::raster(
-#'   raster::extent(12, 13, 56, 57),
-#'   crs = sp::CRS("+proj=longlat")
-#' )
+#' template_raster <- terra::rast(terra::ext(12, 13, 56, 57), crs = "EPSG:4326")
 #'
 #' # Project the ppi on the defined raster
 #' ppi <- integrate_to_ppi(pvol, example_vp, raster = template_raster)
 #'
 #' # Extract the raster data from the ppi object
-#' raster::brick(ppi$data)
+#' ppi$data
 #'
 #' # Calculate the range-corrected ppi on an even finer 500m x 500m pixel raster,
 #' # cropping the area up to 50000 meter from the radar
@@ -237,10 +234,9 @@ integrate_to_ppi <- function(pvol, vp, nx = 100, ny = 100, xlim, ylim, zlim = c(
   } else {
     res <- NA
   }
-  # accept a terra SpatRaster by converting it to a raster::RasterLayer
-  if (inherits(raster, "SpatRaster")) raster <- raster::raster(raster)
+  if (!identical(raster, NA)) raster <- .spatial_raster(raster)
   if (!assertthat::are_equal(raster, NA)) {
-    assertthat::assert_that(inherits(raster, "RasterLayer"))
+    assertthat::assert_that(inherits(raster, "SpatRaster"))
   }
   if (is.null(pvol$geo$lat) && missing(lat)) stop("radar latitude cannot be found in polar volume, specify using 'lat' argument")
   if (is.null(pvol$geo$lon) && missing(lon)) stop("radar longitude cannot be found in polar volume, specify using 'lon' argument")
@@ -260,9 +256,9 @@ integrate_to_ppi <- function(pvol, vp, nx = 100, ny = 100, xlim, ylim, zlim = c(
     pvol$scans <- pvol$scans[which(get_elevation_angles(pvol) != 90)]
   }
 
-  # check crs argument as in raster::raster()
+  # normalize modern and legacy CRS inputs
   if (!missing(crs)) {
-    crs <- sp::CRS(as.character(raster::projection(crs)))
+    crs <- .spatial_crs(crs)
   }
   else {
     crs <- NA
@@ -288,7 +284,7 @@ integrate_to_ppi <- function(pvol, vp, nx = 100, ny = 100, xlim, ylim, zlim = c(
 
   height_reference <- rlang::arg_match(height_reference,c("sea","antenna", "ground"))
   if(height_reference == "ground"){
-    assertthat::assert_that(inherits(raster,"RasterLayer"),
+    assertthat::assert_that(inherits(raster,"SpatRaster"),
     msg="For estimations relative to ground level (`height_reference = \"ground\"`),
     provide a digital elevation map using argument `raster`")
   }
@@ -310,63 +306,31 @@ integrate_to_ppi <- function(pvol, vp, nx = 100, ny = 100, xlim, ylim, zlim = c(
     }
   }
 
-  # if extent not fully specified, determine it based off the first scan
-  if (assertthat::are_equal(raster, NA)) {
-    if (missing(xlim) | missing(ylim)) {
-      spdf <- sf::as_Spatial(scan_to_sf(pvol$scans[[1]], k = k, lat = lat, lon = lon, re = re, rp = rp))
-      spdf_extent <- raster::extent(spdf)
-      # prepare a raster matching the data extent (or user-specified extent)
-      if (missing(xlim)) xlim <- c(spdf_extent@xmin, spdf_extent@xmax)
-      if (missing(ylim)) ylim <- c(spdf_extent@ymin, spdf_extent@ymax)
-    }
-  }
-
-  x <- NULL # define x to suppress devtools::check warning in next line
-
-  if (!assertthat::are_equal(raster, NA)) {
-    localCrs <- paste("+proj=aeqd +lat_0=", lat,
-      " +lon_0=", lon,
-      " +units=m",
-      sep = ""
-    )
-
-    # add ground height level as a scan parameter:
-    if(height_reference == "ground"){
-      pvol = add_param(pvol, raster, "HGHT")
-    }
-
-    # set NA values to zero (note: used to be set to 1)
-    # required for next statement to work
-    raster::values(raster)[is.na(raster::values(raster))] <- 0
-
-    spdf <- methods::as(sf::as_Spatial(
-      sf::st_transform(sf::st_as_sf(as.data.frame(raster::rasterToPoints(raster)), coords=c("x","y"),
-                                                          crs=sf::st_crs(raster)), sf::st_crs(localCrs))),"SpatialPointsDataFrame")
-
-    rasters <- lapply(pvol$scans, function(x) {
-      .scan_to_spdf(
-        add_expected_eta_to_scan(x, vp, param = param, lat = lat, lon = lon, antenna = antenna, beam_angle = beam_angle, k = k, re = re, rp = rp, height_reference = height_reference),
-        spdf = spdf, param = c("range", "distance", "eta", "eta_expected"), k = k, re = re, rp = rp
-      )
-    })
-    output <- methods::as(raster, "SpatialGridDataFrame")
-    output@data <- rasters[[1]]@data
-  } else {
-    rasters <- lapply(pvol$scans, function(x) {
-      methods::as(raster::brick(scan_to_spatraster(add_expected_eta_to_scan(x, vp, param = param, lat = lat, lon = lon, antenna = antenna, beam_angle = beam_angle, k = k, re = re, rp = rp, height_reference = height_reference), nx = nx, ny = ny, xlim = xlim, ylim = ylim, res = res, param = c("range", "distance", "eta", "eta_expected"), raster = raster, crs = crs, k = k, re = re, rp = rp)), "SpatialGridDataFrame")
-    })
-    output <- rasters[[1]]
-  }
+  if (height_reference == "ground") pvol <- add_param(pvol, raster, "HGHT")
+  # Construct one template, then reuse exactly the same cell centres for every scan.
+  first <- scan_to_spatraster(pvol$scans[[1]], nx = nx, ny = ny,
+    xlim = xlim, ylim = ylim, res = res, param = param, raster = raster,
+    crs = crs, lat = lat, lon = lon, k = k, re = re, rp = rp)
+  rasters <- lapply(pvol$scans, function(x) {
+    scan_to_spatraster(add_expected_eta_to_scan(x, vp, param = param, lat = lat,
+      lon = lon, antenna = antenna, beam_angle = beam_angle, k = k, re = re, rp = rp,
+      height_reference = height_reference), raster = first,
+      param = c("range", "distance", "azim", "eta", "eta_expected"),
+      lat = lat, lon = lon, k = k, re = re, rp = rp)
+  })
+  output <- rasters[[1]]
+  rasters <- lapply(rasters, function(x) as.data.frame(terra::values(x)))
+  values <- as.data.frame(terra::values(output))
   eta_expected_sum <-
     rowSums(do.call(cbind, lapply(1:length(rasters), function(i) (rasters[[i]]$eta_expected))), na.rm = TRUE)
   eta_sum <-
     rowSums(do.call(cbind, lapply(1:length(rasters), function(i) (rasters[[i]]$eta))), na.rm = TRUE)
-  output@data$eta_sum_expected <- eta_expected_sum
-  output@data$eta_sum <- eta_sum
-  output@data$R <- eta_sum / eta_expected_sum
-  output@data$VIR <- integrate_profile(vp, alt_min=zlim[1], alt_max=zlim[2])$vir * eta_sum / eta_expected_sum
-  output@data$VID <- integrate_profile(vp, alt_min=zlim[1], alt_max=zlim[2])$vid * eta_sum / eta_expected_sum
-  output@data$eta_sum_to_VIR <- integrate_profile(vp, alt_min=zlim[1], alt_max=zlim[2])$vir / eta_expected_sum
+  values$eta_sum_expected <- eta_expected_sum
+  values$eta_sum <- eta_sum
+  values$R <- eta_sum / eta_expected_sum
+  values$VIR <- integrate_profile(vp, alt_min=zlim[1], alt_max=zlim[2])$vir * eta_sum / eta_expected_sum
+  values$VID <- integrate_profile(vp, alt_min=zlim[1], alt_max=zlim[2])$vid * eta_sum / eta_expected_sum
+  values$eta_sum_to_VIR <- integrate_profile(vp, alt_min=zlim[1], alt_max=zlim[2])$vir / eta_expected_sum
 
   # calculate the overlap between vp and radiated energy
   if ("overlap" %in% param_ppi) {
@@ -375,7 +339,7 @@ integrate_to_ppi <- function(pvol, vp, nx = 100, ny = 100, xlim, ylim, zlim = c(
       beam_profile_overlap(
         vp,
         get_elevation_angles(pvol),
-        seq(0, max(output@data$distance, na.rm = TRUE), length.out = 500),
+        seq(0, max(values$distance, na.rm = TRUE), length.out = 500),
         antenna = antenna,
         zlim = zlim,
         steps = 500,
@@ -390,32 +354,25 @@ integrate_to_ppi <- function(pvol, vp, nx = 100, ny = 100, xlim, ylim, zlim = c(
       )
     # align our projected pixels with this distance grid:
     overlap_index <-
-      sapply(output@data$distance, function(x)
+      sapply(values$distance, function(x)
         ifelse(is.na(x), NA, which.min(abs(overlap$distance - x))))
     # add the overlap data to the output
-    output@data$overlap <- overlap$overlap[overlap_index]
+    values$overlap <- overlap$overlap[overlap_index]
   }
 
   # assemble geometry attributes
   geo <- pvol$geo
   geo$elangle <- get_elevation_angles(pvol)
 
-  # convert the bounding box to wgs coordinates
-  bboxlatlon <- proj_to_wgs(
-    output@bbox[1, ], output@bbox[2, ],
-    proj4string = sf::st_crs(output)
-  )
-  geo$bbox <- matrix(
-    sf::st_bbox(bboxlatlon),
-    nrow = 2,
-    dimnames = list(c("lon", "lat"), c("min", "max"))
-  )
-  rownames(geo$bbox) <- c("lon", "lat")
+  geo$bbox <- .raster_bbox(output)
   geo$merged <- TRUE
+  output <- terra::rast(output, nlyrs = length(param_ppi))
+  terra::values(output) <- values[param_ppi]
+  names(output) <- param_ppi
   output_ppi <-
     list(radar = pvol$radar,
          datetime = pvol$datetime,
-         data = terra::rast(output[param_ppi]), geo = geo)
+         data = output, geo = geo)
   class(output_ppi) <- "ppi"
   output_ppi
 }

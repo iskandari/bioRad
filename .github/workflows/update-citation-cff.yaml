@@ -8,7 +8,7 @@ on:
   release:
     types: [published]
   push:
-    branches: [master, main]
+    branches: [master, main, feature/sf-terra-migration]
     paths:
       - DESCRIPTION
       - inst/CITATION
@@ -16,13 +16,16 @@ on:
 
 name: Update CITATION.cff
 
+permissions:
+  contents: write
+
 jobs:
   update-citation-cff:
     runs-on: macos-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: r-lib/actions/setup-r@v2
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
@@ -43,16 +46,22 @@ jobs:
 
           # Create your CITATION.cff file
           cff_write(keys = mykeys)
+          stopifnot(cff_validate("CITATION.cff"))
 
         shell: Rscript {0}
 
+      - name: Upload citation
+        uses: actions/upload-artifact@v4
+        with:
+          name: citation-cff
+          path: CITATION.cff
+
       - name: Commit results
+        if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
         run: |
           git config --local user.name "github-actions[bot]"
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add CITATION.cff
-          git commit -m 'Update CITATION.cff' || echo "No changes to commit"
-          git push origin || echo "No changes to commit"
-
-
-
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Update CITATION.cff'
+          git push origin

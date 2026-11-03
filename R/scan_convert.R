@@ -61,13 +61,18 @@ scan_to_sf <- function(scan, lat, lon, k = 4 / 3, re = 6378, rp = 6357) {
 #'
 #' `r lifecycle::badge("deprecated")`
 #'
+#' Retained for compatibility during the spatial migration. Use the corresponding
+#' `sf` or `terra` conversion for new code. The legacy package must be installed.
+#'
 #' @inheritParams scan_to_sf
 #' @returns A `SpatialPointsDataFrame`.
+#' @family deprecated spatial functions
 #' @export
 scan_to_spatial <- function(scan, lat, lon, k = 4 / 3, re = 6378, rp = 6357) {
-  lifecycle::deprecate_warn("0.13.0", "scan_to_spatial()", "scan_to_sf()")
+  lifecycle::deprecate_warn("1.0.0", "scan_to_spatial()", "scan_to_sf()")
   call <- match.call()
   call[[1]] <- quote(scan_to_sf)
+  rlang::check_installed("sp", reason = "to return a legacy Spatial object")
   sf::as_Spatial(eval(call, parent.frame()))
 }
 
@@ -82,16 +87,17 @@ scan_to_spatial <- function(scan, lat, lon, k = 4 / 3, re = 6378, rp = 6357) {
 #' @param ylim y (latitude) range
 #' @param param scan parameters to include. If `NA` include all scan parameters. Reducing the number
 #' of scan parameters speeds up evaluation.
-#' @param crs character or object of class CRS. PROJ.4 type description of a Coordinate Reference System (map projection).
+#' @param crs A CRS string, EPSG code or `sf::crs` object. Legacy `sp::CRS`
+#' objects are deprecated.
 #' When 'NA' (default), an azimuthal equidistant projection with origin at the radar location is used.
 #' To use a WSG84 (lat,lon) projection, use crs="+proj=longlat +datum=WGS84"
-#' @param res numeric vector of length 1 or 2 to set the resolution of the raster (see [res][raster::res]).
+#' @param res numeric vector of length 1 or 2 to set the resolution of the raster (see [res][terra::res]).
 #' If this argument is used, arguments `nx` and `ny` are ignored. Unit is identical to `xlim` and `ylim`.
-#' @param raster (optional) `raster::RasterLayer` or `terra::SpatRaster` with a CRS. When specified
+#' @param raster (optional) `terra::SpatRaster` (legacy `RasterLayer` inputs are deprecated) with a CRS. When specified
 #' this raster topology is used for the output, and nx, ny, res arguments are ignored.
 #' @returns A `SpatRaster`.
-#' @details Uses [scan_to_sf()] to georeference the scan's pixels. If multiple scan pixels fall within
-#' the same raster pixel, the last added pixel is given (see [rasterize][raster::rasterize] for details).
+#' @details Samples the polar scan at output cell centres, using the range gate
+#' and azimuth bin containing each centre. Cells outside the scan are `NA`.
 #' @family raster functions
 #' @export
 #' @examples
@@ -109,8 +115,7 @@ scan_to_spatial <- function(scan, lat, lon, k = 4 / 3, re = 6378, rp = 6357) {
 scan_to_spatraster <- function(scan, nx = 100, ny = 100, xlim, ylim, res = NA, param, raster = NA, lat, lon, crs = NA, k = 4 / 3, re = 6378, rp = 6357) {
   if (!is.scan(scan)) stop("'scan' should be an object of class scan")
   if (get_elevation_angles(scan) == 90) stop("georeferencing of 90 degree birdbath scan not supported")
-  # accept a terra SpatRaster by converting it to a raster::RasterLayer
-  if (inherits(raster, "SpatRaster")) raster <- raster::raster(raster)
+  if (!identical(raster, NA)) raster <- .spatial_raster(raster)
   if (!assertthat::is.number(nx) && missing(res)) stop("'nx' should be an integer")
   if (!assertthat::is.number(ny) && missing(res)) stop("'ny' should be an integer")
   if (!missing(xlim)) {
@@ -121,7 +126,7 @@ scan_to_spatraster <- function(scan, nx = 100, ny = 100, xlim, ylim, res = NA, p
     if (length(ylim) != 2 & !is.numeric(ylim)) stop("'ylim' should be an integer vector of length two")
     if (is.na(ylim[1]) | is.na(ylim[2]) | ylim[1] > ylim[2]) stop("'ylim' should be a vector with two numeric values for upper and lower bound")
   }
-  if (!missing(res) && !is.na(res)) {
+  if (!missing(res) && !all(is.na(res))) {
     assertthat::assert_that(is.numeric(res))
     assertthat::assert_that(length(res) <= 2)
   }
@@ -135,7 +140,7 @@ scan_to_spatraster <- function(scan, nx = 100, ny = 100, xlim, ylim, res = NA, p
     param_to_use <- names(scan$params)
   }
   if (!assertthat::are_equal(raster, NA)) {
-    assertthat::assert_that(inherits(raster, "RasterLayer"))
+    assertthat::assert_that(inherits(raster, "SpatRaster"))
   }
 
   if (is.null(scan$geo$lat) && missing(lat)) stop("radar latitude cannot be found in scan, specify using 'lat' argument")
@@ -146,20 +151,20 @@ scan_to_spatraster <- function(scan, nx = 100, ny = 100, xlim, ylim, res = NA, p
 
   assertthat::assert_that(assertthat::is.number(lat))
   assertthat::assert_that(assertthat::is.number(lon))
-  localCrs <- sp::CRS(paste("+proj=aeqd +lat_0=", lat,
+  localCrs <- paste("+proj=aeqd +lat_0=", lat,
     " +lon_0=", lon,
     " +units=m",
     sep = ""
-  ))
-  if (missing(crs) | is.na(crs)) {
+  )
+  if (missing(crs) || (length(crs) == 1 && is.na(crs))) {
     crs <- localCrs
   }
   else {
-    # check crs argument as in raster::raster()
-    crs <- sp::CRS(as.character(raster::projection(crs)))
+    # normalize modern and legacy CRS inputs
+    crs <- .spatial_crs(crs)
   }
   if (!assertthat::are_equal(raster, NA)) {
-    crs <- raster::crs(raster)
+    crs <- terra::crs(raster)
   }
   assertthat::assert_that(assertthat::is.number(k))
   assertthat::assert_that(assertthat::is.number(re))
@@ -175,13 +180,13 @@ scan_to_spatraster <- function(scan, nx = 100, ny = 100, xlim, ylim, res = NA, p
   nazim <- dim(scan)[3]
 
   # extent not fully specified, determine it
-  if (missing(xlim) | missing(ylim)) {
+  if (identical(raster, NA) && (missing(xlim) || missing(ylim))) {
     # georeference the data
     points <- scan_to_sf(scan, k = k, lat = lat, lon = lon, re = re, rp = rp)
     # keep only selected scan parameters
     if (!missing(param)) points <- points[param]
     # transform spatialpoints to coordinate system of the raster
-    if (!missing(crs)) points <- sf::st_transform(points, sf::st_crs(crs))
+    points <- sf::st_transform(points, sf::st_crs(crs))
     # get extent of the available data
     points_extent <- sf::st_bbox(points)
     # prepare a raster matching the data extent (or user-specified extent)
@@ -189,22 +194,17 @@ scan_to_spatraster <- function(scan, nx = 100, ny = 100, xlim, ylim, res = NA, p
     if (missing(ylim)) ylim <- points_extent[c("ymin", "ymax")]
   }
   if (!assertthat::are_equal(raster, NA)) {
-    r <- raster::raster(raster)
+    r <- terra::rast(raster, nlyrs = 1)
   } else {
-    if (missing(res) | is.na(res)) {
-      r <- raster::raster(ncols = nx, nrows = ny, ext = raster::extent(c(xlim, ylim)), crs = crs)
+    if (missing(res) || all(is.na(res))) {
+      r <- terra::rast(ncols = nx, nrows = ny, ext = terra::ext(c(xlim, ylim)), crs = crs)
     }
     else {
-      r <- raster::raster(ncols = nx, nrows = ny, ext = raster::extent(c(xlim, ylim)), crs = crs, res = res)
+      r <- terra::rast(ext = terra::ext(c(xlim, ylim)), crs = crs, resolution = res)
     }
   }
 
-  if(sf::st_crs(r) == sf::st_crs(localCrs)){
-    crds <- sp::coordinates(r)
-  } else{
-    # if raster has different crs than the aeqd projection of a standard scan, convert raster coordinates to local Cartesian CRS
-    crds <- sp::coordinates(sp::spTransform(raster::rasterToPoints(r, spatial = TRUE), localCrs))
-  }
+  crds <- sf::st_coordinates(.raster_points(r, localCrs))
 
   # convert raster coordinates to polar indices
   polar_coords <- cartesian_to_polar(crds, elev = scan$geo$elangle, k = k, lat = lat, re = re, rp = rp)
@@ -221,43 +221,43 @@ scan_to_spatraster <- function(scan, nx = 100, ny = 100, xlim, ylim, res = NA, p
 
   # generate brick for each scan parameter
   param_to_add <- setdiff(param_to_use, c("distance", "range", "azim"))
-  output <- raster::brick(r, nl = length(param_to_add), filename = "")
+  output <- terra::rast(r, nlyrs = length(param_to_add))
   names(output) <- param_to_add
-  # fill the rasterbrick
-  for (name in param_to_add) {
-    # suppress warning 'In readAll(x) : cannot read values; there is no file associated with this RasterBrick
-    suppressWarnings({
-      raster::values(output[[name]]) <- scan$params[[name]][index]
-    })
-  }
+  terra::values(output) <- vapply(param_to_add, function(name) as.vector(scan$params[[name]][index]), numeric(length(index)))
+
   if ("distance" %in% param_to_use) output$distance <- beam_distance(polar_coords$range, elev = scan$geo$elangle, k = k, lat = lat, re = re, rp = rp)
   if ("range" %in% param_to_use) output$range <- polar_coords$range
   if ("azim" %in% param_to_use) output$azim <- polar_coords$azim
-  terra::rast(output)
+  output
 }
 
 #' Convert a polar scan into a raster
 #'
 #' `r lifecycle::badge("deprecated")`
 #'
+#' Retained for compatibility during the spatial migration. Use the corresponding
+#' `sf` or `terra` conversion for new code. The legacy package must be installed.
+#'
 #' @inheritParams scan_to_spatraster
 #' @returns A `RasterBrick`.
+#' @family deprecated spatial functions
 #' @export
 scan_to_raster <- function(scan, nx = 100, ny = 100, xlim, ylim, res = NA, param, raster = NA, lat, lon, crs = NA, k = 4 / 3, re = 6378, rp = 6357) {
-  lifecycle::deprecate_warn("0.13.0", "scan_to_raster()", "scan_to_spatraster()")
+  lifecycle::deprecate_warn("1.0.0", "scan_to_raster()", "scan_to_spatraster()")
   call <- match.call()
   call[[1]] <- quote(scan_to_spatraster)
+  rlang::check_installed("raster", reason = "to return a legacy RasterBrick")
   raster::brick(eval(call, parent.frame()))
 }
 
-# hidden helper function that projects a scan on points of a SpatialPointsDataFrame
+# Internal point sampler used by the deprecated scan_to_spdf() adapter.
 # allows for faster projections of multiple scans to the same grid in
 # integrate_to_ppi function, see issue #293
 .scan_to_spdf <- function(scan, spdf, param, lat, lon, k = 4 / 3, re = 6378, rp = 6357) {
   if (!is.scan(scan)) stop("'scan' should be an object of class scan")
   if (get_elevation_angles(scan) == 90) stop("georeferencing of 90 degree birdbath scan not supported")
-  if (!inherits(spdf, "SpatialPointsDataFrame")) {
-    stop("spdf should be of class SpatialPointsDataFrame")
+  if (!inherits(spdf, "sf")) {
+    stop("spdf should be of class sf")
   }
   if (!missing(param)) {
     if (FALSE %in% (param %in% c(names(scan$params), "azim", "range", "distance"))) stop("'param' contains scan parameter not found in scan")
@@ -277,15 +277,15 @@ scan_to_raster <- function(scan, nx = 100, ny = 100, xlim, ylim, res = NA, param
 
   assertthat::assert_that(assertthat::is.number(lat))
   assertthat::assert_that(assertthat::is.number(lon))
-  localCrs <- sp::CRS(paste("+proj=aeqd +lat_0=", lat,
+  localCrs <- paste("+proj=aeqd +lat_0=", lat,
     " +lon_0=", lon,
     " +units=m",
     sep = ""
-  ))
+  )
   assertthat::assert_that(assertthat::is.number(k))
   assertthat::assert_that(assertthat::is.number(re))
   assertthat::assert_that(assertthat::is.number(rp))
-  stopifnot(all.equal(localCrs, sp::CRS(sp::proj4string(spdf))))
+  stopifnot(sf::st_crs(localCrs) == sf::st_crs(spdf))
 
   rscale <- scan$geo$rscale
   ascale <- scan$geo$ascale
@@ -295,7 +295,7 @@ scan_to_raster <- function(scan, nx = 100, ny = 100, xlim, ylim, res = NA, param
   nrang <- dim(scan)[2]
   nazim <- dim(scan)[3]
 
-  crds <- sp::coordinates(spdf)
+  crds <- sf::st_coordinates(spdf)
   # convert raster coordinates to polar indices
   polar_coords <- cartesian_to_polar(crds, elev = scan$geo$elangle, k = k, lat = lat, re = re, rp = rp)
   index <- polar_to_index(polar_coords, rangebin = rscale, azimbin = ascale, rangestart = rstart, azimstart = astart)
@@ -313,8 +313,7 @@ scan_to_raster <- function(scan, nx = 100, ny = 100, xlim, ylim, res = NA, param
   output <- spdf[, F]
   # fill the rasterbrick
   for (name in param_to_add) {
-    # suppress warning 'In readAll(x) : cannot read values; there is no file associated with this RasterBrick
-    output[T, name] <- scan$params[[name]][index]
+    output[[name]] <- scan$params[[name]][index]
   }
   if ("distance" %in% param_to_use) output$distance <- beam_distance(polar_coords$range, elev = scan$geo$elangle, k = k, lat = lat, re = re, rp = rp)
   if ("range" %in% param_to_use) output$range <- polar_coords$range
@@ -323,8 +322,10 @@ scan_to_raster <- function(scan, nx = 100, ny = 100, xlim, ylim, res = NA, param
 }
 
 scan_to_spdf <- function(scan, spdf, param, lat, lon, k = 4 / 3, re = 6378, rp = 6357) {
-  lifecycle::deprecate_warn("0.13.0", "scan_to_spdf()", "scan_to_sf()")
+  lifecycle::deprecate_warn("1.0.0", "scan_to_spdf()", "scan_to_sf()")
   call <- match.call()
   call[[1]] <- quote(.scan_to_spdf)
-  eval(call, parent.frame())
+  rlang::check_installed("sp", reason = "to return a legacy Spatial object")
+  call$spdf <- sf::st_as_sf(spdf)
+  sf::as_Spatial(eval(call, parent.frame()))
 }

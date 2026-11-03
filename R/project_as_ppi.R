@@ -10,7 +10,7 @@
 #' @param ylim The range of latitudes to include.
 #' @param xlim The range of longitudes to include.
 #' @param project Whether to vertically project onto earth's surface.
-#' @param raster (optional) `raster::RasterLayer` or `terra::SpatRaster` with a CRS. When specified
+#' @param raster (optional) `terra::SpatRaster` (legacy `RasterLayer` inputs are deprecated) with a CRS. When specified
 #' this raster topology is used for the output, and `grid_size`, `range_max`, `xlim`, `ylim` are ignored.
 #' @returns An object of class '[ppi][summary.ppi]'.
 #' @family ppi calculation functions
@@ -55,25 +55,15 @@ project_as_ppi <- function(x, grid_size = 500, range_max = 50000,
 #' @export
 project_as_ppi.param <- function(x, grid_size = 500, range_max = 50000,
                                  project = TRUE, ylim = NULL, xlim = NULL, raster = NA, k = 4 / 3, re = 6378, rp = 6357) {
-  # note: raster argument not used currently, as the raster is parsed through the
-  # grid_size argument. May need to be refactored
-
   stopifnot(inherits(x, "param"))
-
+  if (!identical(raster, NA)) grid_size <- .spatial_raster(raster)
   data <- sample_polar(x, grid_size, range_max, project, ylim, xlim, k = k, re = re, rp = rp)
-  # copy the parameter's attributes
   geo <- attributes(x)$geo
-  if (!inherits(grid_size, "RasterLayer")) {
-    geo$bbox <- attributes(data)$bboxlatlon
-  }
+  geo$bbox <- attr(data, "bboxlatlon")
+  if (is.null(geo$bbox)) geo$bbox <- .raster_bbox(data)
   geo$merged <- FALSE
-  data <- terra::rast(data)
-  data <- list(
-    radar = attributes(x)$radar, datetime = attributes(x)$datetime,
-    data = data, geo = geo
-  )
-  class(data) <- "ppi"
-  data
+  structure(list(radar = attr(x, "radar"), datetime = attr(x, "datetime"),
+    data = data, geo = geo), class = "ppi")
 }
 
 #' @describeIn project_as_ppi Project multiple `ppi`'s for all scan
@@ -83,126 +73,41 @@ project_as_ppi.scan <- function(x, grid_size = 500, range_max = 50000,
                                 project = TRUE, ylim = NULL, xlim = NULL, raster = NA, k = 4 / 3, re = 6378, rp = 6357) {
   stopifnot(inherits(x, "scan"))
 
-  # accept a terra SpatRaster by converting it to a raster::RasterLayer
-  if (inherits(raster, "SpatRaster")) raster <- raster::raster(raster)
-
-  if (!assertthat::are_equal(raster, NA)) {
-    assertthat::assert_that(inherits(raster, "RasterLayer"))
-  }
-
-  if (inherits(raster, "RasterLayer")) {
-    local_crs <- paste("+proj=aeqd +lat_0=", x$geo$lat,
-      " +lon_0=", x$geo$lon,
-      " +units=m",
-      sep = ""
-    )
-    grid_size <- sf::st_as_sf(
-      as.data.frame(raster::coordinates(raster)),
-      coords = c("x", "y"),
-      crs = sf::st_crs(raster)
-    )
-    grid_size <- sf::st_transform(grid_size, local_crs)
-    grid_size <- sf::as_Spatial(grid_size)
-  }
-  data <- sample_polar(
-    x$params[[1]], grid_size, range_max,
-    project, ylim, xlim,
-    k = k, re = re, rp = rp
-  )
-  # copy the parameter's geo list to attributes
+  if (!identical(raster, NA)) grid_size <- .spatial_raster(raster)
+  layers <- lapply(x$params, sample_polar, grid_size = grid_size, range_max = range_max,
+    project = project, ylim = ylim, xlim = xlim, k = k, re = re, rp = rp)
+  data <- do.call(c, unname(layers))
   geo <- x$geo
-  if ("bboxlatlon" %in% names(attributes(data))) {
-    geo$bbox <- attributes(data)$bboxlatlon
-  }
+  geo$bbox <- attr(layers[[1]], "bboxlatlon")
+  if (is.null(geo$bbox)) geo$bbox <- .raster_bbox(data)
   geo$merged <- FALSE
-  if (length(x$params) > 1) {
-    alldata <- lapply(
-      x$params,
-      function(param) {
-        sample_polar(
-          param, grid_size, range_max,
-          project, ylim, xlim,
-          k = k, re = re, rp = rp
-        )
-      }
-    )
-    data <- do.call(cbind, alldata)
-  }
-  if (inherits(data, "SpatialPoints")) {
-    data <- sp::SpatialGridDataFrame(
-      methods::as(raster, "SpatialGrid"),
-      data@data
-    )
-  }
-  data <- terra::rast(data)
-  data <- list(
-    radar = x$radar, datetime = x$datetime,
-    data = data, geo = geo
-  )
-  class(data) <- "ppi"
-  data
+  structure(list(radar = x$radar, datetime = x$datetime, data = data, geo = geo), class = "ppi")
 }
 
 
 sample_polar <- function(param, grid_size, range_max, project, ylim, xlim, k = 4 / 3, re = 6378, rp = 6357) {
-  # proj4string=CRS(paste("+proj=aeqd +lat_0=",attributes(param)$geo$lat," +lon_0=",attributes(param)$geo$lon," +ellps=WGS84 +datum=WGS84 +units=m +no_defs",sep=""))
   proj4string <- (paste("+proj=aeqd +lat_0=", attributes(param)$geo$lat,
     " +lon_0=", attributes(param)$geo$lon,
     " +units=m",
     sep = ""
   ))
-  spatial_points <- inherits(grid_size, "SpatialPoints")
-  # create gridtopo depending on specification of grid_size
-  if (inherits(grid_size, c("RasterLayer", "SpatialPoints", "sf"))) {
-    if(inherits(grid_size, "RasterLayer")){
-      gridSf<-sf::st_as_sf(as.data.frame(raster::rasterToPoints(grid_size)), coords=c("x","y"), crs=sf::st_crs(grid_size))
-      if (sf::st_crs(gridSf) != sf::st_crs(proj4string)) {
-        gridSf <- sf::st_transform(gridSf, sf::st_crs(proj4string))
-      }
-      gridTopoCrds<-sf::st_coordinates(gridSf)
-    } else {
-      gridSf <- sf::st_as_sf(grid_size)
-      if (sf::st_crs(gridSf) != sf::st_crs(proj4string)) {
-        gridSf <- sf::st_transform(gridSf, proj4string)
-      }
-      gridTopoCrds <- sf::st_coordinates(gridSf)
-      grid_size <- gridSf
-    }
+  if (inherits(grid_size, c("Raster", "SpatRaster"))) {
+    output <- terra::rast(.spatial_raster(grid_size), nlyrs = 1)
+    gridTopoCrds <- sf::st_coordinates(.raster_points(output, proj4string))
   } else {
-    bboxlatlon_sf <- proj_to_wgs(
-      c(-range_max, range_max),
-      c(-range_max, range_max),
-      proj4string
-    )
-    bboxlatlon <- matrix(
-      sf::st_bbox(bboxlatlon_sf),
-      nrow = 2,
-      dimnames = list(c("lon", "lat"), c("min", "max"))
-    )
-    if (!missing(ylim) & !is.null(ylim)) {
-      bboxlatlon["lat", ] <- ylim
-    }
-    if (!missing(xlim) & !is.null(xlim)) {
-      bboxlatlon["lon", ] <- xlim
-    }
-    if (missing(ylim) & missing(xlim)) {
-      cellcentre.offset <- -c(range_max, range_max)
-      cells.dim <- ceiling(rep(2 * range_max / grid_size, 2))
-    } else {
-      bbox <- sf::st_coordinates(wgs_to_proj(
-        bboxlatlon["lon", ], bboxlatlon["lat", ], proj4string
-      ))
-      cellcentre.offset <- c(
-        min(bbox[, "X"]),
-        min(bbox[, "Y"])
-      )
-      cells.dim <- c(
-        ceiling((max(bbox[, "X"]) - min(bbox[, "X"])) / grid_size),
-        ceiling((max(bbox[, "Y"]) - min(bbox[, "Y"])) / grid_size)
-      )
-    }
-    # define cartesian grid
-    gridTopoCrds<-sp::coordinates(gridTopo <- sp::GridTopology(cellcentre.offset, c(grid_size, grid_size), cells.dim))
+    bboxlatlon <- matrix(sf::st_bbox(proj_to_wgs(c(-range_max, range_max),
+      c(-range_max, range_max), proj4string)), nrow = 2,
+      dimnames = list(c("lon", "lat"), c("min", "max")))
+    if (!is.null(ylim)) bboxlatlon["lat", ] <- ylim
+    if (!is.null(xlim)) bboxlatlon["lon", ] <- xlim
+    bbox <- sf::st_coordinates(wgs_to_proj(bboxlatlon["lon", ], bboxlatlon["lat", ], proj4string))
+    offset <- apply(bbox, 2, min)
+    dims <- ceiling(apply(bbox, 2, function(z) diff(range(z))) / grid_size)
+    output <- terra::rast(ncols = dims[1], nrows = dims[2],
+      xmin = offset[1] - grid_size / 2, xmax = offset[1] + (dims[1] - .5) * grid_size,
+      ymin = offset[2] - grid_size / 2, ymax = offset[2] + (dims[2] - .5) * grid_size,
+      crs = proj4string)
+    gridTopoCrds <- terra::xyFromCell(output, seq_len(terra::ncell(output)))
   }
   # if projecting, account for elevation angle
   if (project) {
@@ -234,24 +139,10 @@ sample_polar <- function(param, grid_size, range_max, project, ylim, xlim, k = 4
 
   colnames(data) <- attributes(param)$param
 
-  if (inherits(grid_size, "RasterLayer")) {
-    output <- sp::SpatialGridDataFrame(methods::as(grid_size, "SpatialGrid"), data)
-  } else if (spatial_points) {
-    output <- sf::as_Spatial(
-      sf::st_sf(data, geometry = sf::st_geometry(sf::st_as_sf(grid_size)))
-    )
-  } else if (inherits(grid_size, "sf")) {
-    output <- sf::st_sf(data, geometry = sf::st_geometry(sf::st_as_sf(grid_size)))
-  } else {
-    output <- sp::SpatialGridDataFrame(
-      grid = sp::SpatialGrid(
-        grid = gridTopo,
-        proj4string = sp::CRS(proj4string)
-      ),
-      data = data
-    )
-    attributes(output)$bboxlatlon <- bboxlatlon
-  }
+  terra::values(output) <- data
+  names(output) <- colnames(data)
+  if (exists("bboxlatlon", inherits = FALSE)) attr(output, "bboxlatlon") <- bboxlatlon
+
   output
 }
 

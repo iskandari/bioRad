@@ -12,7 +12,7 @@
 #'    format, which is the implementation of the OPERA data information model in
 #'   the [HDF5](https://www.hdfgroup.org/solutions/hdf5/) format, 2) a format
 #'   supported by the [RSL
-#'   library](https://trmm-fc.gsfc.nasa.gov/trmm_gv/software/rsl/) or 3) Vaisala
+#'   library](https://github.com/adokter/rsl) or 3) Vaisala
 #'   IRIS (IRIS RAW) format.
 #' @param vpfile Character. File name. When provided, writes a vertical profile
 #'   file (`vpfile`) either in the VPTS CSV or ODIM HDF5 format to disk.
@@ -220,7 +220,8 @@
 #'   # convert to terra raster class
 #'   terra::rast() |>
 #'   # download digital elevation data (increase z for higher resolutions)
-#'   elevatr::get_elev_raster(z = 5, clip = "bbox") -> data_dem
+#'   elevatr::get_elev_raster(z = 5, clip = "bbox") |>
+#'   terra::rast() -> data_dem
 #' # set digital elevations for open water to mean sea level (0)
 #' data_dem[data_dem<0]=0
 #' # set an informative name for the DEM information

@@ -13,7 +13,6 @@ vignette: >
 Load bioRad
 
 ```{r}
-options("sp_evolution_status" = 2L)
 library(bioRad)
 ```
 
@@ -146,7 +145,7 @@ Or plot the vertically integrated density on a map:
 
 ```{r}
 bm <- "osm"
-if (all(sapply(c("ggspatial","prettymapr", "rosm"), requireNamespace, quietly = TRUE))){
+if (all(sapply(c("ggspatial", "prettymapr", "rosm"), requireNamespace, quietly = TRUE))){
    map(my_corrected_ppi, map=bm, param = "VIR", alpha = .5)
 }
 ```

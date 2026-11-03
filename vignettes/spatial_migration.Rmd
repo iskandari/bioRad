@@ -1,0 +1,78 @@
+---
+title: "Migrating spatial workflows to sf and terra"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Migrating spatial workflows to sf and terra}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+bioRad now uses **sf** for points and coordinate transformations and **terra**
+for gridded data. All newly generated PPIs contain a `terra::SpatRaster` in
+`ppi$data`. Projection, integration, compositing, plotting, and elevation
+extraction use these modern classes internally.
+
+## Updating code
+
+| Previous code | Replacement |
+|---|---|
+| `scan_to_spatial(scan)` | `scan_to_sf(scan)` |
+| `scan_to_raster(scan)` | `scan_to_spatraster(scan)` |
+| `ppi$data@data` | `as.data.frame(terra::values(ppi$data))` |
+| `ppi$data@bbox` | `terra::ext(ppi$data)` |
+| `ppi$data["DBZH"]` | `ppi$data[["DBZH"]]` |
+| `sp::CRS("+proj=longlat +datum=WGS84")` | `sf::st_crs(4326)` or `"EPSG:4326"` |
+| `raster::raster(...)` templates | `terra::rast(...)` templates |
+
+The extent representation also changes: `terra::ext()` stores xmin, xmax,
+ymin, ymax. It is not the two-row bounding-box matrix used by `sp`.
+`dim(ppi)` continues to return the number of parameters, x cells, and y cells.
+
+```{r}
+library(bioRad)
+ppi <- project_as_ppi(example_scan, grid_size = 2000, range_max = 10000)
+dim(ppi)
+names(ppi$data)
+```
+
+## Transition and compatibility
+
+`sp` and `raster` are optional compatibility dependencies. Deprecated scan
+conversion functions still return their original classes when the relevant
+packages are installed. Legacy raster templates, `sp::CRS` arguments, and
+legacy PPIs are accepted with deprecation warnings. Convert old saved PPIs
+explicitly with `convert_legacy(ppi)`; downstream PPI methods also convert them
+when needed. New results use terra, so code accessing old S4 slots must change.
+
+The compatibility adapters are retained during the transition. No removal
+release has been set. A future removal should follow release notices and
+allow users time to migrate. Removing the adapters will then allow removal
+of `sp` and `raster` from `Suggests` as well.
+
+## Saving modern PPIs
+
+SpatRaster objects contain external pointers. For RDS serialization, pack the
+data with `terra::wrap()` and unpack it after reading. For large rasters, use
+`terra::writeRaster()` and retain the remaining PPI metadata separately.
+
+```{r}
+file <- tempfile(fileext = ".rds")
+stored <- ppi
+stored$data <- terra::wrap(ppi$data)
+saveRDS(stored, file)
+restored <- readRDS(file)
+restored$data <- terra::unwrap(restored$data)
+stopifnot(isTRUE(all.equal(terra::values(restored$data), terra::values(ppi$data))))
+unlink(file)
+```
+
+## Remaining spatial dependencies
+
+`ggspatial`, `prettymapr`, and `rosm` provide optional basemap tiles. bioRad renders them in
+Web Mercator, avoiding the legacy raster reprojection path. `elevatr` is still
+an optional source of elevation data; convert its output with `terra::rast()`
+when necessary. `fields` remains in use for vertical-profile images.
+`prettymapr` supplies a matrix bounding-box helper without loading `sp` or
+`raster`. bioRad does not depend directly on `rgdal`,
+`rgeos`, or `maptools`. Optional third-party packages may still install legacy
+packages for their own compatibility APIs.

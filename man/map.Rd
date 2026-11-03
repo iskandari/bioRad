@@ -49,8 +49,7 @@ to plot.}
 \eqn{1/cos(latitude radar * pi/180)}.}
 
 \item{radar_size}{Numeric. Size of the symbol indicating the radar position. Use
-\code{NULL} if you do not want to plot the radar point. This might be useful the radar
-is outside the range of data.}
+\code{NULL} to omit plotting the radar location.}
 
 \item{radar_color}{Character. Color of the symbol indicating the radar
 position.}
@@ -97,7 +96,7 @@ model (ODIM), see Table 16 in the
 # Project a scan as a ppi
 ppi <- project_as_ppi(example_scan)
 \donttest{
-if (all(sapply(c("ggspatial","prettymapr", "rosm"), requireNamespace, quietly = TRUE))) {
+if (all(sapply(c("ggspatial", "prettymapr", "rosm"), requireNamespace, quietly = TRUE))) {
 # Choose a basemap
 basemap <- rosm::osm.types()[1]
 

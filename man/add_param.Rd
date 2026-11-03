@@ -15,7 +15,7 @@ add_param(x, raster, param)
 \arguments{
 \item{x}{A \code{pvol} or \code{scan} object.}
 
-\item{raster}{An object of class \code{terra::SpatRaster} or \code{raster::RasterLayer}.}
+\item{raster}{An object of class \code{terra::SpatRaster} (legacy \code{RasterLayer} inputs are deprecated).}
 
 \item{param}{The name of the added parameter.}
 }
@@ -45,11 +45,12 @@ example_pvol |>
   # extract lowest scan
   get_scan(.5) |>
   # convert to raster object
-  scan_to_raster(param="DBZH") |>
+  scan_to_spatraster(param="DBZH") |>
   # convert to terra raster class
   terra::rast() |>
   # download digital elevation data (increase z for higher resolutions)
-  elevatr::get_elev_raster(z = 5, clip = "bbox") -> data_dem
+  elevatr::get_elev_raster(z = 5, clip = "bbox") |>
+  terra::rast() -> data_dem
 # set digital elevations for open water to mean sea level (0)
 data_dem[data_dem<0]=0
 # set an informative name for the DEM information

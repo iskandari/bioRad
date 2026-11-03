@@ -44,7 +44,9 @@ object is a list containing:
 \itemize{
 \item \code{radar}: Radar identifier.
 \item \code{datetime}: Nominal time of the volume to which the scan belongs in UTC.
-\item \code{data}: A \code{\link[terra:SpatRaster-class]{terra::SpatRaster}} containing the georeferenced data.
+\item \code{data}: A \code{\link[terra:SpatRaster]{terra::SpatRaster}} containing the georeferenced data.
+Legacy spatial data can be upgraded with \code{\link[=convert_legacy]{convert_legacy()}}. New PPIs always
+contain \code{SpatRaster} data. Use \code{terra::values()} instead of S4 slot access.
 See \code{\link[=summary.param]{summary.param()}} for commonly available parameters, such as \code{DBZH}.
 \item \code{geo}: List of the scan's geographic properties (see the \code{geo} element in
 \code{\link[=summary.scan]{summary.scan()}}), with two additional properties:

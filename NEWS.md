@@ -1,4 +1,27 @@
-# bioRad 0.12.0.9000
+# bioRad 1.0.0
+
+## Spatial migration
+
+* New spatial calculations use **sf** and **terra** throughout. `ppi$data` is
+  a `terra::SpatRaster`, including projected, integrated and composite PPIs.
+* `scan_to_sf()` and `scan_to_spatraster()` replace `scan_to_spatial()` and
+  `scan_to_raster()`. The old functions warn but retain their legacy return types.
+* `sp` and `raster` are now optional dependencies used only for compatibility.
+  Legacy raster templates, CRS objects and saved spatial PPIs remain accepted
+  with deprecation warnings. Use `convert_legacy(ppi)` to migrate saved PPIs.
+* Use `terra::values(ppi$data)` instead of `ppi$data@data`,
+  `terra::ext(ppi$data)` instead of `ppi$data@bbox`, and `ppi$data[[param]]`
+  to select layers. Direct access to legacy S4 slots cannot be retained on
+  newly created PPIs.
+* Retained optional `ggspatial`, `prettymapr`, and `rosm` basemap support.
+  Maps use Web Mercator tiles without legacy raster reprojection.
+  Removed obsolete `proj4` CI setup.
+* Compatibility wrappers are retained for the transition; no removal release
+  is scheduled yet. They require the relevant legacy packages to be installed.
+* Raster templates retain all cells, including missing values. `add_param()`
+  now extracts in the input raster's CRS, including geographic DEMs.
+
+## Other changes
 
 * `apply_mistnet()` now accepts `pvol` objects in addition to pvolfiles.
 

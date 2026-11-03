@@ -43,7 +43,7 @@ files containing a single scan/sweep. Or a single \code{pvol} object. The file d
 \href{https://github.com/adokter/vol2bird/blob/master/doc/OPERA2014_O4_ODIM_H5-v2.2.pdf}{ODIM}
 format, which is the implementation of the OPERA data information model in
 the \href{https://www.hdfgroup.org/solutions/hdf5/}{HDF5} format, 2) a format
-supported by the \href{https://trmm-fc.gsfc.nasa.gov/trmm_gv/software/rsl/}{RSL library} or 3) Vaisala
+supported by the \href{https://github.com/adokter/rsl}{RSL library} or 3) Vaisala
 IRIS (IRIS RAW) format.}
 
 \item{vpfile}{Character. File name. When provided, writes a vertical profile
@@ -273,11 +273,12 @@ example_pvol |>
   # extract lowest scan
   get_scan(.5) |>
   # convert to raster object
-  scan_to_raster(param="DBZH") |>
+  scan_to_spatraster(param="DBZH") |>
   # convert to terra raster class
   terra::rast() |>
   # download digital elevation data (increase z for higher resolutions)
-  elevatr::get_elev_raster(z = 5, clip = "bbox") -> data_dem
+  elevatr::get_elev_raster(z = 5, clip = "bbox") |>
+  terra::rast() -> data_dem
 # set digital elevations for open water to mean sea level (0)
 data_dem[data_dem<0]=0
 # set an informative name for the DEM information

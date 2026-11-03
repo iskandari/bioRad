@@ -56,6 +56,7 @@
 plot.ppi <- function(x, param, xlim, ylim, zlim = c(-20, 20),
                      ratio = 1, na.value = "transparent", ...) {
   stopifnot(inherits(x, "ppi"))
+  x <- convert_legacy(x)
 
   if (methods::hasArg("quantity")) stop("unknown function argument 'quantity`. Did you mean `param`?")
 
@@ -75,17 +76,7 @@ plot.ppi <- function(x, param, xlim, ylim, zlim = c(-20, 20),
   colorscale <- color_scale_fill(param, zlim, na.value)
   # extract the scan parameter
   y <- NULL # dummy assignment to suppress devtools check warning
-  data <- if (inherits(x$data, "SpatRaster")) {
-    x$data[[param]]
-  } else {
-    do.call(function(y) x$data[y], list(param))
-  }
-  # convert to points
-  data <- if (inherits(data, "SpatRaster")) {
-    terra::as.data.frame(data, xy = TRUE, na.rm = FALSE)
-  } else {
-    raster::as.data.frame(raster::raster(data), xy = TRUE)
-  }
+  data <- terra::as.data.frame(x$data[[param]], xy = TRUE, na.rm = FALSE)
   # bring z-values within plotting range
   index <- which(data[, 3] < zlim[1])
   if (length(index) > 0) {
@@ -97,19 +88,12 @@ plot.ppi <- function(x, param, xlim, ylim, zlim = c(-20, 20),
   }
   # plot
   if (missing(xlim)) {
-    xlim <- if (inherits(x$data, "SpatRaster")) {
-      as.vector(terra::ext(x$data))[1:2]
-    } else {
-      x$data@bbox[1, ]
-    }
+    xlim <- as.vector(terra::ext(x$data))[1:2]
   }
   if (missing(ylim)) {
-    ylim <- if (inherits(x$data, "SpatRaster")) {
-      as.vector(terra::ext(x$data))[3:4]
-    } else {
-      x$data@bbox[2, ]
-    }
+    ylim <- as.vector(terra::ext(x$data))[3:4]
   }
+
   bbox <- ggplot2::coord_fixed(xlim = xlim, ylim = ylim, ratio = ratio)
   ggplot2::ggplot(data = data, ...) +
     ggplot2::geom_raster(ggplot2::aes(x, y, fill = eval(parse(text = param)))) +

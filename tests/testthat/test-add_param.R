@@ -4,7 +4,7 @@ pvol <- read_pvolfile(pvolfile)
 
 # Build a terra SpatRaster matching the topology of the lowest scan and fill it
 # with synthetic data. scan_to_spatraster() returns a terra object in the
-# radar's local azimuthal-equidistant projection, which we bridge to terra.
+# radar's local azimuthal-equidistant projection.
 make_synthetic_spatraster <- function(scan) {
   r <- scan_to_spatraster(scan, nx = 50, ny = 50, param = "DBZH")
   # synthetic, fully populated values so extraction within the extent is non-NA
@@ -14,13 +14,10 @@ make_synthetic_spatraster <- function(scan) {
 }
 
 lowest_scan <- get_scan(pvol, 0.5)
-# Both raster classes are tested as input: a terra SpatRaster and a raster-package
-# RasterLayer. add_param() must accept either, and the two cover both branches of
-# the RasterLayer-to-SpatRaster conversion in add_param.scan()/add_param.pvol().
+# Modern workflows run without the optional legacy packages. Compatibility
+# with RasterLayer inputs is tested separately in test-spatial-migration.R.
 synthetic_spatraster <- make_synthetic_spatraster(lowest_scan)
-# RasterLayer derived from the SpatRaster, kept only to exercise add_param()'s
-# documented RasterLayer support (no terra equivalent for that input class).
-synthetic_raster <- raster::raster(synthetic_spatraster)
+synthetic_raster <- synthetic_spatraster
 
 test_that("add_param() requires its arguments", {
   # `param` has no default and must be supplied
@@ -44,7 +41,7 @@ test_that("add_param.scan() errors when x is not a scan", {
   )
 })
 
-test_that("add_param() adds a parameter to a scan (in-memory RasterLayer input)", {
+test_that("add_param() adds a parameter to a scan (SpatRaster input)", {
   scan_out <- add_param(lowest_scan, synthetic_raster, "synthetic")
 
   # the returned object is still a scan
@@ -71,8 +68,8 @@ test_that("add_param() honours the param argument name (SpatRaster input)", {
   expect_equal(attributes(scan_out$params[["HGHT"]])$param, "HGHT")
 })
 
-test_that("add_param() adds a parameter to every scan of a pvol (RasterLayer input)", {
-  expect_s4_class(synthetic_raster, "RasterLayer")
+test_that("add_param() adds a parameter to every scan of a pvol (SpatRaster input)", {
+  expect_s4_class(synthetic_raster, "SpatRaster")
 
   pvol_out <- add_param(pvol, synthetic_raster, "synthetic")
 

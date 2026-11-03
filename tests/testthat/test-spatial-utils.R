@@ -1,4 +1,5 @@
 test_that("coordinate transformations preserve sp results", {
+  skip_if_not_installed("sp")
   lon <- c(12.5, 13.3)
   lat <- c(56.0, 56.8)
   crss <- c(

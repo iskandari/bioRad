@@ -16,6 +16,8 @@
 #' * `radar`: Radar identifier.
 #' * `datetime`: Nominal time of the volume to which the scan belongs in UTC.
 #' * `data`: A [`terra::SpatRaster`] containing the georeferenced data.
+#' Legacy spatial data can be upgraded with [convert_legacy()]. New PPIs always
+#' contain `SpatRaster` data. Use `terra::values()` instead of S4 slot access.
 #' See [summary.param()] for commonly available parameters, such as `DBZH`.
 #' * `geo`: List of the scan's geographic properties (see the `geo` element in
 #' [summary.scan()]), with two additional properties:
@@ -46,13 +48,10 @@ summary.ppi <- function(object, ...) {
 #' @export
 print.ppi <- function(x, digits = max(3L, getOption("digits") - 3L), ...) {
   stopifnot(inherits(x, "ppi"))
+  x <- convert_legacy(x)
   cat("               Plan position indicator (class ppi)\n\n")
   cat("  parameters: ", names(x$data), "\n")
-  data_dim <- if (inherits(x$data, "SpatRaster")) {
-    c(terra::ncol(x$data), terra::nrow(x$data))
-  } else {
-    x$data@grid@cells.dim
-  }
+  data_dim <- c(terra::ncol(x$data), terra::nrow(x$data))
   cat("        dims: ", data_dim[1], "x", data_dim[2], "pixels\n\n")
 }
 
@@ -75,10 +74,8 @@ is.ppi <- function(x) {
 #' @export
 dim.ppi <- function(x) {
   stopifnot(inherits(x, "ppi"))
-  if (inherits(x$data, "SpatRaster")) {
-    return(c(terra::nlyr(x$data), terra::ncol(x$data), terra::nrow(x$data)))
-  }
-  c(dim(x$data)[2], x$data@grid@cells.dim)
+  x <- convert_legacy(x)
+  c(terra::nlyr(x$data), terra::ncol(x$data), terra::nrow(x$data))
 }
 
 #' Subset a plan position indicator (`ppi`)
@@ -109,6 +106,7 @@ dim.ppi <- function(x) {
 #' ppi[-1:-2]
 `[.ppi` <- function(x, i) {
   stopifnot(inherits(x, "ppi"))
+  x <- convert_legacy(x)
   my_ppi <- list(
     radar = x$radar, datetime = x$datetime,
     data = if (inherits(x$data, "SpatRaster")) x$data[[i]] else x$data[i],

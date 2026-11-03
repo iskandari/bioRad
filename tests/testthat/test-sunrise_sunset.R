@@ -26,6 +26,7 @@ test_that("sunset in the Netherlands", {
 
 test_that("sf solar calculations preserve SpatialPoints results", {
   date <- as.POSIXct("2016-01-01", tz = "UTC")
+  skip_if_not_installed("sp")
   locations <- sp::SpatialPoints(
     cbind(lon = c(5, -76.5), lat = c(53, 42.4)),
     proj4string = sp::CRS("+proj=longlat +datum=WGS84")
@@ -46,6 +47,7 @@ test_that("sf solar calculations preserve SpatialPoints results", {
 test_that("sf solar calculations preserve time zones", {
   date <- as.POSIXct("2016-06-05", tz = "America/Chicago")
   datetime <- as.POSIXct(date, tz = "UTC")
+  skip_if_not_installed("sp")
   locations <- sp::SpatialPoints(
     cbind(lon = -98, lat = 45),
     proj4string = sp::CRS("+proj=longlat +datum=WGS84")

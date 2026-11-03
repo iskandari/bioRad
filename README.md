@@ -48,6 +48,16 @@ More vignettes:
 Documentation for the latest development version can be found
 [here](https://adriaandokter.com/bioRad/dev/).
 
+## Spatial migration in 1.0.0
+
+bioRad now uses **sf** and **terra** for spatial processing. New PPIs
+contain `terra::SpatRaster` data. Use `scan_to_sf()` and
+`scan_to_spatraster()` for scan conversion, and `convert_legacy()` for
+saved legacy PPIs. Deprecated `sp` and `raster` adapters remain
+available during the transition with optional dependencies. See
+`vignette("spatial_migration", package = "bioRad")` for code
+replacements and instructions for saving modern PPIs.
+
 ## Installation
 
 ### Install system libraries (Linux or when building locally)
@@ -59,11 +69,11 @@ prior to installation, which are required by dependency package
 additionally, CURL, SSL and GDAL are required by other dependency
 packages of bioRad:
 
-| System | Command |
-|:---|:---|
-| **OS X (using Homebrew)** | `brew install hdf5 proj gsl` |
+| System                                      | Command                                                                                                       |
+|:--------------------------------------------|:--------------------------------------------------------------------------------------------------------------|
+| **OS X (using Homebrew)**                   | `brew install hdf5 proj gsl`                                                                                  |
 | **Debian-based systems (including Ubuntu)** | `sudo apt-get install libhdf5-dev libproj-dev gsl-bin libgsl-dev libcurl4-openssl-dev libssl-dev libgdal-dev` |
-| **Systems supporting yum and RPMs** | `sudo yum install hdf5-devel proj-devel gsl gsl-devel libcurl-devel openssl-devel gdal gdal-devel` |
+| **Systems supporting yum and RPMs**         | `sudo yum install hdf5-devel proj-devel gsl gsl-devel libcurl-devel openssl-devel gdal gdal-devel`            |
 
 <br>
 
@@ -89,8 +99,8 @@ Then load the package with:
 
 ``` r
 library(bioRad)
-#> Welcome to bioRad version 0.12.0
-#> using vol2birdR version 1.3.0 (MistNet installed)
+#> Welcome to bioRad version 1.0.0
+#> using vol2birdR version 1.3.1 (MistNet installed)
 ```
 
 ### (optional) Enable MistNet
@@ -113,8 +123,8 @@ for more details.
 bioRad can read weather radar data (= polar volumes) in the
 [`ODIM`](http://eumetnet.eu/wp-content/uploads/2017/01/OPERA_hdf_description_2014.pdf)
 format and formats supported by the [RSL
-library](https://trmm-fc.gsfc.nasa.gov/trmm_gv/software/rsl/), such as
-NEXRAD data. NEXRAD data (US) are [available as open
+library](https://github.com/adokter/rsl), such as NEXRAD data. NEXRAD
+data (US) are [available as open
 data](https://www.ncei.noaa.gov/nexradinv/) and on
 [AWS](https://registry.opendata.aws/noaa-nexrad/).
 
@@ -132,7 +142,7 @@ system.file("extdata", "volume.h5", package = "bioRad") %>%
   plot(param = "VRADH") # VRADH = radial velocity in m/s
 ```
 
-<img src="man/figures/README-plot_ppi-1.png" alt="" width="100%" />
+<img src="man/figures/README-plot_ppi-1.png" alt="Plan position indicator showing radial velocities toward and away from the radar." width="100%" />
 
 *Radial velocities towards the radar are negative, while radial
 velocities away from the radar are positive, so in this plot there is
@@ -155,7 +165,7 @@ example_vpts %>%
   plot()
 ```
 
-<img src="man/figures/README-plot_vpts-1.png" alt="" width="100%" />
+<img src="man/figures/README-plot_vpts-1.png" alt="Time series of bird density by altitude, with gray bars marking data gaps." width="100%" />
 
 *The gray bars in the plot indicate gaps in the data.*
 
@@ -170,7 +180,7 @@ my_vpi <- integrate_profile(example_vpts)
 plot(my_vpi, quantity = "mtr") # mtr = migration traffic rate
 ```
 
-<img src="man/figures/README-plot_vpi-1.png" alt="" width="100%" />
+<img src="man/figures/README-plot_vpi-1.png" alt="Migration traffic rate over time, integrated across altitude." width="100%" />
 
 To know the total number of birds passing over the radar during the full
 time series, we use the last value of the *cumulative migration traffic*

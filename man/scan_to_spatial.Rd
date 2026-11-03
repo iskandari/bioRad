@@ -2,7 +2,7 @@
 % Please edit documentation in R/scan_convert.R
 \name{scan_to_spatial}
 \alias{scan_to_spatial}
-\title{Convert a polar scan into a spatial object (deprecated)}
+\title{Convert a polar scan into a spatial object}
 \usage{
 scan_to_spatial(scan, lat, lon, k = 4/3, re = 6378, rp = 6357)
 }
@@ -20,20 +20,17 @@ scan_to_spatial(scan, lat, lon, k = 4/3, re = 6378, rp = 6357)
 \item{rp}{Numeric. Earth polar radius, in km.}
 }
 \value{
-a SpatialPointsDataFrame
+A \code{SpatialPointsDataFrame}.
 }
 \description{
-This function is deprecated. Use \code{\link[=scan_to_sf]{scan_to_sf()}} instead.
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 }
 \details{
-Beam altitude accounts for the curvature of the earth, using \link{beam_height}.
-Distance from the radar over the earth's surface is calculated using \link{beam_distance}.
-}
-\examples{
-\dontrun{scan_to_spatial(example_scan)}
+Retained for compatibility during the spatial migration. Use the corresponding
+\code{sf} or \code{terra} conversion for new code. The legacy package must be installed.
 }
 \seealso{
-Other raster functions:
+Other deprecated spatial functions:
 \code{\link[=scan_to_raster]{scan_to_raster()}}
 }
-\concept{raster functions}
+\concept{deprecated spatial functions}

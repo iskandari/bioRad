@@ -4,6 +4,7 @@
 \alias{convert_legacy}
 \alias{convert_legacy.vp}
 \alias{convert_legacy.vpts}
+\alias{convert_legacy.ppi}
 \title{Convert legacy bioRad objects}
 \usage{
 convert_legacy(x)
@@ -11,16 +12,21 @@ convert_legacy(x)
 \method{convert_legacy}{vp}(x)
 
 \method{convert_legacy}{vpts}(x)
+
+\method{convert_legacy}{ppi}(x)
 }
 \arguments{
-\item{x}{A \code{vp} or \code{vpts} object.}
+\item{x}{A \code{vp}, \code{vpts} or \code{ppi} object.}
 }
 \value{
 An updated object of the same class as the input.
 }
 \description{
-Convert legacy bioRad objects (\code{vp}, \code{vpts}) and make them compatible with
-the current bioRad version. Conversion includes renaming \code{HGHT} to \code{height}.
+Convert legacy bioRad objects (\code{vp}, \code{vpts}, \code{ppi}) and make them compatible with
+the current bioRad version. Conversion includes renaming \code{HGHT} to \code{height}
+and converting legacy \code{ppi$data} to \code{terra::SpatRaster}. Spatial conversion
+preserves layer names, values, grid and CRS; the original object is unchanged.
+Legacy \code{sp}/\code{raster} inputs warn and require the corresponding optional packages.
 }
 \examples{
 # Convert a vp object

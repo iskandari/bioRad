@@ -13,7 +13,7 @@ files containing a single scan/sweep. Or a single \code{pvol} object. The file d
 \href{https://github.com/adokter/vol2bird/blob/master/doc/OPERA2014_O4_ODIM_H5-v2.2.pdf}{ODIM}
 format, which is the implementation of the OPERA data information model in
 the \href{https://www.hdfgroup.org/solutions/hdf5/}{HDF5} format, 2) a format
-supported by the \href{https://trmm-fc.gsfc.nasa.gov/trmm_gv/software/rsl/}{RSL library} or 3) Vaisala
+supported by the \href{https://github.com/adokter/rsl}{RSL library} or 3) Vaisala
 IRIS (IRIS RAW) format.}
 
 \item{pvolfile_odim}{Filename for the polar volume in ODIM HDF5 format to be

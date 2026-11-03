@@ -75,11 +75,8 @@ calculate_param.pvol <- function(x, ...) {
 #' @export
 calculate_param.ppi <- function(x, ...) {
   assertthat::assert_that(is.ppi(x))
-  data <- if (inherits(x$data, "SpatRaster")) {
-    as.data.frame(terra::values(x$data))
-  } else {
-    x$data@data
-  }
+  x <- convert_legacy(x)
+  data <- as.data.frame(terra::values(x$data))
   calc <- as.list(substitute(list(...)))[-1L]
   name <- names(calc)
   if (is.null(name)) {
@@ -90,11 +87,7 @@ calculate_param.ppi <- function(x, ...) {
     if ("" == (name[[i]])) {
       name[[i]] <- deparse(nn, width.cutoff = 250L)[1]
     }
-    if (inherits(x$data, "SpatRaster")) {
-      x$data[[name[[i]]]] <- newParam
-    } else {
-      x$data@data[, name[[i]]] <- newParam
-    }
+    x$data[[name[[i]]]] <- newParam
   }
   return(x)
 }

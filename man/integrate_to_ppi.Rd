@@ -45,7 +45,7 @@ integrate_to_ppi(
 
 \item{zlim}{Numeric vector of length two. Altitude range, in m}
 
-\item{res}{numeric vector of length 1 or 2 to set the resolution of the raster (see \link[raster:res]{res}).
+\item{res}{numeric vector of length 1 or 2 to set the resolution of the raster (see \link[terra:res]{res}).
 If this argument is used, arguments \code{nx} and \code{ny} are ignored. Unit is identical to \code{xlim} and \code{ylim}.}
 
 \item{quantity}{Character. Profile quantity on which to base range
@@ -55,7 +55,7 @@ corrections, either \code{eta} or \code{dens}.}
 corrections. Typically the same parameter from which animal densities are
 estimated in \code{vp}. Either \code{DBZH}, \code{DBZV}, \code{DBZ}, \code{TH}, or \code{TV}.}
 
-\item{raster}{(optional) \code{raster::RasterLayer} or \code{terra::SpatRaster} with a CRS. When specified
+\item{raster}{(optional) \code{terra::SpatRaster} (legacy \code{RasterLayer} inputs are deprecated) with a CRS. When specified
 this raster topology is used for the output, and nx, ny, res arguments are ignored.
 When \code{height_reference = "ground"} the raster values should contain
 the ground height digital elevation in meters.}
@@ -71,7 +71,8 @@ in \code{vp}.}
 the angle between the half-power (-3 dB) points of the main lobe for the one-way
 antenna pattern.}
 
-\item{crs}{character or object of class CRS. PROJ.4 type description of a Coordinate Reference System (map projection).
+\item{crs}{A CRS string, EPSG code or \code{sf::crs} object. Legacy \code{sp::CRS}
+objects are deprecated.
 When 'NA' (default), an azimuthal equidistant projection with origin at the radar location is used.
 To use a WSG84 (lat,lon) projection, use crs="+proj=longlat +datum=WGS84"}
 
@@ -186,19 +187,16 @@ ppi <- integrate_to_ppi(pvol, example_vp, res = 2000)
 plot(ppi, param = "VID", zlim = c(0, 200))
 
 # Download a basemap and map the ppi
-if (all(sapply(c("ggspatial","prettymapr", "rosm"), requireNamespace, quietly = TRUE))) {
+if (all(sapply(c("ggspatial", "prettymapr", "rosm"), requireNamespace, quietly = TRUE))) {
 map(ppi)
 # First define the raster
-template_raster <- raster::raster(
-  raster::extent(12, 13, 56, 57),
-  crs = sp::CRS("+proj=longlat")
-)
+template_raster <- terra::rast(terra::ext(12, 13, 56, 57), crs = "EPSG:4326")
 
 # Project the ppi on the defined raster
 ppi <- integrate_to_ppi(pvol, example_vp, raster = template_raster)
 
 # Extract the raster data from the ppi object
-raster::brick(ppi$data)
+ppi$data
 
 # Calculate the range-corrected ppi on an even finer 500m x 500m pixel raster,
 # cropping the area up to 50000 meter from the radar
@@ -215,7 +213,7 @@ if(requireNamespace("elevatr", quietly = TRUE)){
 # define a radar-centred grid (azimuthal equidistant, radar at the center):
 pvol |>
   get_scan(.5) |>
-  scan_to_raster(param = "DBZH") |>
+  scan_to_spatraster(param = "DBZH") |>
   terra::rast() -> radar_grid
 
 # download elevation data and resample onto that grid. `expand`

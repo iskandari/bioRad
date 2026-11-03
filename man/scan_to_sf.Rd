@@ -7,25 +7,38 @@
 scan_to_sf(scan, lat, lon, k = 4/3, re = 6378, rp = 6357)
 }
 \arguments{
-\item{scan}{A scan (sweep) of class \code{scan}.}
-\item{lat}{Geodetic latitude of the radar in degrees. If missing, taken from \code{scan}.}
-\item{lon}{Geodetic longitude of the radar in degrees. If missing, taken from \code{scan}.}
+\item{scan}{a scan (sweep) of class scan}
+
+\item{lat}{Geodetic latitude of the radar in degrees. If missing taken from \code{scan}.}
+
+\item{lon}{Geodetic longitude of the radar in degrees. If missing taken from \code{scan}.}
+
 \item{k}{Numeric. Standard refraction coefficient.}
+
 \item{re}{Numeric. Earth equatorial radius, in km.}
+
 \item{rp}{Numeric. Earth polar radius, in km.}
 }
-\value{An \code{sf} object with point geometries.}
+\value{
+An \code{sf} object with point geometries.
+}
 \description{
-Georeferences the pixel centers of a polar scan as point geometries.
+Georeferences the center of  pixels for a scan into a
+\code{\link[sf:sf]{sf::sf}} object.
 }
 \details{
-Beam altitude accounts for earth curvature using \code{\link[=beam_height]{beam_height()}}.
-Distance over the earth's surface is calculated using \code{\link[=beam_distance]{beam_distance()}}.
+Beam altitude accounts for the curvature of the earth, using \link{beam_height}.
+Distance from the radar over the earth's surface is calculated using \link{beam_distance}.
 }
 \examples{
+# load example scan:
+data(example_scan)
+
+# convert to an sf object:
 scan_to_sf(example_scan)
 }
 \seealso{
+Other raster functions:
 \code{\link[=scan_to_spatraster]{scan_to_spatraster()}}
 }
 \concept{raster functions}

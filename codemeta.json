@@ -8,13 +8,13 @@
   "codeRepository": "https://github.com/adokter/bioRad/",
   "issueTracker": "https://github.com/adokter/bioRad/issues",
   "license": "https://spdx.org/licenses/MIT",
-  "version": "0.12.0",
+  "version": "1.0.0",
   "programmingLanguage": {
     "@type": "ComputerLanguage",
     "name": "R",
     "url": "https://r-project.org"
   },
-  "runtimePlatform": "R version 4.6.0 (2026-04-24)",
+  "runtimePlatform": "R version 4.5.0 (2025-04-11)",
   "provider": {
     "@id": "https://cran.r-project.org",
     "@type": "Organization",
@@ -159,6 +159,7 @@
       "@type": "SoftwareApplication",
       "identifier": "ggspatial",
       "name": "ggspatial",
+      "version": ">= 1.1.9",
       "provider": {
         "@id": "https://cran.r-project.org",
         "@type": "Organization",
@@ -183,6 +184,7 @@
       "@type": "SoftwareApplication",
       "identifier": "prettymapr",
       "name": "prettymapr",
+      "version": ">= 0.2.5",
       "provider": {
         "@id": "https://cran.r-project.org",
         "@type": "Organization",
@@ -190,6 +192,18 @@
         "url": "https://cran.r-project.org"
       },
       "sameAs": "https://CRAN.R-project.org/package=prettymapr"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "identifier": "raster",
+      "name": "raster",
+      "provider": {
+        "@id": "https://cran.r-project.org",
+        "@type": "Organization",
+        "name": "Comprehensive R Archive Network (CRAN)",
+        "url": "https://cran.r-project.org"
+      },
+      "sameAs": "https://CRAN.R-project.org/package=raster"
     },
     {
       "@type": "SoftwareApplication",
@@ -207,6 +221,7 @@
       "@type": "SoftwareApplication",
       "identifier": "rosm",
       "name": "rosm",
+      "version": ">= 0.3.0",
       "provider": {
         "@id": "https://cran.r-project.org",
         "@type": "Organization",
@@ -214,6 +229,18 @@
         "url": "https://cran.r-project.org"
       },
       "sameAs": "https://CRAN.R-project.org/package=rosm"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "identifier": "sp",
+      "name": "sp",
+      "provider": {
+        "@id": "https://cran.r-project.org",
+        "@type": "Organization",
+        "name": "Comprehensive R Archive Network (CRAN)",
+        "url": "https://cran.r-project.org"
+      },
+      "sameAs": "https://CRAN.R-project.org/package=sp"
     },
     {
       "@type": "SoftwareApplication",
@@ -230,15 +257,15 @@
     },
     {
       "@type": "SoftwareApplication",
-      "identifier": "vdiffr",
-      "name": "vdiffr",
+      "identifier": "tidyselect",
+      "name": "tidyselect",
       "provider": {
         "@id": "https://cran.r-project.org",
         "@type": "Organization",
         "name": "Comprehensive R Archive Network (CRAN)",
         "url": "https://cran.r-project.org"
       },
-      "sameAs": "https://CRAN.R-project.org/package=vdiffr"
+      "sameAs": "https://CRAN.R-project.org/package=tidyselect"
     },
     {
       "@type": "SoftwareApplication",
@@ -418,20 +445,9 @@
     },
     "15": {
       "@type": "SoftwareApplication",
-      "identifier": "raster",
-      "name": "raster",
-      "provider": {
-        "@id": "https://cran.r-project.org",
-        "@type": "Organization",
-        "name": "Comprehensive R Archive Network (CRAN)",
-        "url": "https://cran.r-project.org"
-      },
-      "sameAs": "https://CRAN.R-project.org/package=raster"
-    },
-    "16": {
-      "@type": "SoftwareApplication",
       "identifier": "readr",
       "name": "readr",
+      "version": ">= 2.2.0",
       "provider": {
         "@id": "https://cran.r-project.org",
         "@type": "Organization",
@@ -440,7 +456,7 @@
       },
       "sameAs": "https://CRAN.R-project.org/package=readr"
     },
-    "17": {
+    "16": {
       "@type": "SoftwareApplication",
       "identifier": "rhdf5",
       "name": "rhdf5",
@@ -452,7 +468,7 @@
       },
       "sameAs": "https://bioconductor.org/packages/release/bioc/html/rhdf5.html"
     },
-    "18": {
+    "17": {
       "@type": "SoftwareApplication",
       "identifier": "rlang",
       "name": "rlang",
@@ -464,7 +480,7 @@
       },
       "sameAs": "https://CRAN.R-project.org/package=rlang"
     },
-    "19": {
+    "18": {
       "@type": "SoftwareApplication",
       "identifier": "sf",
       "name": "sf",
@@ -476,24 +492,12 @@
       },
       "sameAs": "https://CRAN.R-project.org/package=sf"
     },
-    "20": {
-      "@type": "SoftwareApplication",
-      "identifier": "sp",
-      "name": "sp",
-      "provider": {
-        "@id": "https://cran.r-project.org",
-        "@type": "Organization",
-        "name": "Comprehensive R Archive Network (CRAN)",
-        "url": "https://cran.r-project.org"
-      },
-      "sameAs": "https://CRAN.R-project.org/package=sp"
-    },
-    "21": {
+    "19": {
       "@type": "SoftwareApplication",
       "identifier": "stats",
       "name": "stats"
     },
-    "22": {
+    "20": {
       "@type": "SoftwareApplication",
       "identifier": "stringr",
       "name": "stringr",
@@ -505,10 +509,11 @@
       },
       "sameAs": "https://CRAN.R-project.org/package=stringr"
     },
-    "23": {
+    "21": {
       "@type": "SoftwareApplication",
       "identifier": "suntools",
       "name": "suntools",
+      "version": ">= 1.0.0",
       "provider": {
         "@id": "https://cran.r-project.org",
         "@type": "Organization",
@@ -517,7 +522,7 @@
       },
       "sameAs": "https://CRAN.R-project.org/package=suntools"
     },
-    "24": {
+    "22": {
       "@type": "SoftwareApplication",
       "identifier": "terra",
       "name": "terra",
@@ -529,7 +534,7 @@
       },
       "sameAs": "https://CRAN.R-project.org/package=terra"
     },
-    "25": {
+    "23": {
       "@type": "SoftwareApplication",
       "identifier": "tidyr",
       "name": "tidyr",
@@ -541,24 +546,12 @@
       },
       "sameAs": "https://CRAN.R-project.org/package=tidyr"
     },
-    "26": {
-      "@type": "SoftwareApplication",
-      "identifier": "tidyselect",
-      "name": "tidyselect",
-      "provider": {
-        "@id": "https://cran.r-project.org",
-        "@type": "Organization",
-        "name": "Comprehensive R Archive Network (CRAN)",
-        "url": "https://cran.r-project.org"
-      },
-      "sameAs": "https://CRAN.R-project.org/package=tidyselect"
-    },
-    "27": {
+    "24": {
       "@type": "SoftwareApplication",
       "identifier": "utils",
       "name": "utils"
     },
-    "28": {
+    "25": {
       "@type": "SoftwareApplication",
       "identifier": "viridis",
       "name": "viridis",
@@ -570,7 +563,7 @@
       },
       "sameAs": "https://CRAN.R-project.org/package=viridis"
     },
-    "29": {
+    "26": {
       "@type": "SoftwareApplication",
       "identifier": "viridisLite",
       "name": "viridisLite",
@@ -582,7 +575,7 @@
       },
       "sameAs": "https://CRAN.R-project.org/package=viridisLite"
     },
-    "30": {
+    "27": {
       "@type": "SoftwareApplication",
       "identifier": "xml2",
       "name": "xml2",
@@ -596,7 +589,7 @@
     },
     "SystemRequirements": null
   },
-  "fileSize": "5007.883KB",
+  "fileSize": "6072.009KB",
   "citation": [
     {
       "@type": "ScholarlyArticle",
@@ -679,7 +672,7 @@
       }
     }
   ],
-  "releaseNotes": "https://github.com/adokter/bioRad/blob/main/NEWS.md",
+  "releaseNotes": "https://github.com/adokter/bioRad/blob/master/NEWS.md",
   "readme": "https://github.com/adokter/bioRad/blob/master/README.md",
   "contIntegration": ["https://github.com/adokter/bioRad/actions/workflows/R-CMD-check.yaml", "https://app.codecov.io/gh/adokter/bioRad"],
   "developmentStatus": "https://www.repostatus.org/#active",

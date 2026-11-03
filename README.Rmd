@@ -40,6 +40,15 @@ More vignettes:
 
 Documentation for the latest development version can be found [here](https://adriaandokter.com/bioRad/dev/).
 
+## Spatial migration in 1.0.0
+
+bioRad now uses **sf** and **terra** for spatial processing. New PPIs contain
+`terra::SpatRaster` data. Use `scan_to_sf()` and `scan_to_spatraster()` for scan
+conversion, and `convert_legacy()` for saved legacy PPIs. Deprecated `sp` and
+`raster` adapters remain available during the transition with optional dependencies.
+See `vignette("spatial_migration", package = "bioRad")` for code replacements
+and instructions for saving modern PPIs.
+
 ## Installation
 
 ### Install system libraries (Linux or when building locally)
@@ -86,11 +95,11 @@ Read the [vol2birdR documentation](https://adriaandokter.com/vol2birdR/articles/
 
 ### Radar data example
 
-bioRad can read weather radar data (= polar volumes) in the [`ODIM`](http://eumetnet.eu/wp-content/uploads/2017/01/OPERA_hdf_description_2014.pdf) format and formats supported by the [RSL library](https://trmm-fc.gsfc.nasa.gov/trmm_gv/software/rsl/), such as NEXRAD data. NEXRAD data (US) are [available as open data](https://www.ncei.noaa.gov/nexradinv/) and on [AWS](https://registry.opendata.aws/noaa-nexrad/).
+bioRad can read weather radar data (= polar volumes) in the [`ODIM`](http://eumetnet.eu/wp-content/uploads/2017/01/OPERA_hdf_description_2014.pdf) format and formats supported by the [RSL library](https://github.com/adokter/rsl), such as NEXRAD data. NEXRAD data (US) are [available as open data](https://www.ncei.noaa.gov/nexradinv/) and on [AWS](https://registry.opendata.aws/noaa-nexrad/).
 
 Here we read an example polar volume data file with `read_pvolfile()`, extract the scan/sweep at elevation angle 3 with `get_scan()`, project the data to a plan position indicator with `project_as_ppi()` and plot the _radial velocity_ of detected targets with `plot()`:
 
-```{r plot_ppi, warning = FALSE, message = FALSE}
+```{r plot_ppi, warning = FALSE, message = FALSE, fig.alt = "Plan position indicator showing radial velocities toward and away from the radar."}
 library(tidyverse) # To pipe %>% the steps below
 system.file("extdata", "volume.h5", package = "bioRad") %>%
   read_pvolfile() %>%
@@ -107,7 +116,7 @@ Weather radar data can be processed into vertical profiles of biological targets
 
 Once vertical profile data are loaded into bioRad, these can be bound into time series using `bind_into_vpts()`. Here we read an example time series, project it on a regular time grid with `regularize_vpts()` and plot it with `plot()`:
 
-```{r plot_vpts, warning = FALSE, message = FALSE}
+```{r plot_vpts, warning = FALSE, message = FALSE, fig.alt = "Time series of bird density by altitude, with gray bars marking data gaps."}
 example_vpts %>%
   regularize_vpts() %>%
   plot()
@@ -117,7 +126,7 @@ _The gray bars in the plot indicate gaps in the data._
 
 The altitudes in the profile can be integrated with `integrate_profile()` resulting in a dataframe with rows for datetimes and columns for quantities. Here we plot the quantity _migration traffic rate_ (column `mtr`) with `plot()`:
 
-```{r plot_vpi, warning = FALSE, message = FALSE}
+```{r plot_vpi, warning = FALSE, message = FALSE, fig.alt = "Migration traffic rate over time, integrated across altitude."}
 my_vpi <- integrate_profile(example_vpts)
 
 plot(my_vpi, quantity = "mtr") # mtr = migration traffic rate

@@ -8,7 +8,7 @@
 #'    format, which is the implementation of the OPERA data information model in
 #'   the [HDF5](https://www.hdfgroup.org/solutions/hdf5/) format, 2) a format
 #'   supported by the [RSL
-#'   library](https://trmm-fc.gsfc.nasa.gov/trmm_gv/software/rsl/) or 3) Vaisala
+#'   library](https://github.com/adokter/rsl) or 3) Vaisala
 #'   IRIS (IRIS RAW) format.
 #' @param pvolfile_odim Filename for the polar volume in ODIM HDF5 format to be
 #' generated.

@@ -22,35 +22,65 @@ scan_to_spatraster(
 )
 }
 \arguments{
-\item{scan}{A scan (sweep) of class \code{scan}.}
-\item{nx}{Number of raster pixels in the x dimension.}
-\item{ny}{Number of raster pixels in the y dimension.}
-\item{xlim}{Range in the x dimension.}
-\item{ylim}{Range in the y dimension.}
-\item{res}{Numeric vector of length one or two setting raster resolution.}
-\item{param}{Scan parameters to include. If missing, include all scan parameters.}
-\item{raster}{Optional \code{raster::RasterLayer} or \code{terra::SpatRaster} template with a CRS.}
-\item{lat}{Geodetic latitude of the radar in degrees. If missing, taken from \code{scan}.}
-\item{lon}{Geodetic longitude of the radar in degrees. If missing, taken from \code{scan}.}
-\item{crs}{Coordinate reference system. By default, uses an azimuthal equidistant projection centered on the radar.}
+\item{scan}{a scan (sweep) of class scan}
+
+\item{nx}{number of raster pixels in the x (longitude) dimension}
+
+\item{ny}{number of raster pixels in the y (latitude) dimension}
+
+\item{xlim}{x (longitude) range}
+
+\item{ylim}{y (latitude) range}
+
+\item{res}{numeric vector of length 1 or 2 to set the resolution of the raster (see \link[terra:res]{res}).
+If this argument is used, arguments \code{nx} and \code{ny} are ignored. Unit is identical to \code{xlim} and \code{ylim}.}
+
+\item{param}{scan parameters to include. If \code{NA} include all scan parameters. Reducing the number
+of scan parameters speeds up evaluation.}
+
+\item{raster}{(optional) \code{terra::SpatRaster} (legacy \code{RasterLayer} inputs are deprecated) with a CRS. When specified
+this raster topology is used for the output, and nx, ny, res arguments are ignored.}
+
+\item{lat}{Geodetic latitude of the radar in degrees. If missing taken from \code{scan}.}
+
+\item{lon}{Geodetic longitude of the radar in degrees. If missing taken from \code{scan}.}
+
+\item{crs}{A CRS string, EPSG code or \code{sf::crs} object. Legacy \code{sp::CRS}
+objects are deprecated.
+When 'NA' (default), an azimuthal equidistant projection with origin at the radar location is used.
+To use a WSG84 (lat,lon) projection, use crs="+proj=longlat +datum=WGS84"}
+
 \item{k}{Numeric. Standard refraction coefficient.}
+
 \item{re}{Numeric. Earth equatorial radius, in km.}
+
 \item{rp}{Numeric. Earth polar radius, in km.}
 }
-\value{A \code{terra::SpatRaster}.}
+\value{
+A \code{SpatRaster}.
+}
 \description{
-Projects a polar scan onto a regular raster grid.
+Converts an object of class \code{scan} into a \code{\link[terra:SpatRaster]{terra::SpatRaster}}.
 }
 \details{
-If multiple scan pixels fall within one raster pixel, the last pixel is used.
+Samples the polar scan at output cell centres, using the range gate
+and azimuth bin containing each centre. Cells outside the scan are \code{NA}.
 }
 \examples{
 \donttest{
+# default projects full extent on 100x100 pixel raster:
 scan_to_spatraster(example_scan)
-scan_to_spatraster(example_scan, ylim = c(55, 57), xlim = c(12, 13), res = 0.1)
+
+# crop the scan and project at a resolution of 0.1 degree:
+scan_to_spatraster(example_scan, ylim = c(55, 57), xlim = c(12, 13), res = .1)
+
+# using a template raster (a terra SpatRaster can be passed directly):
+template_raster <- terra::rast(terra::ext(12, 13, 56, 58), crs = "epsg:4326")
+scan_to_spatraster(example_scan, raster = template_raster)
 }
 }
 \seealso{
+Other raster functions:
 \code{\link[=scan_to_sf]{scan_to_sf()}}
 }
 \concept{raster functions}

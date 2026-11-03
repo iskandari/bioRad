@@ -76,7 +76,10 @@ plot.scan <- function(x, param, xlim = c(0, 100000),
   rstart <- max(c(0, x$geo$rstart), na.rm = TRUE)
   astart <- max(c(0, x$geo$astart), na.rm = TRUE)
 
-  data <- raster::as.data.frame(raster::flip(raster::raster(t(data), ymn = astart, ymx = astart + 360, xmn = rstart, xmx = rstart + rscale * dimraster[1]), direction = "y"), xy = TRUE)
+  grid <- terra::rast(t(data), crs = "")
+  terra::ext(grid) <- terra::ext(rstart, rstart + rscale * dimraster[1], astart, astart + 360)
+  data <- terra::as.data.frame(terra::flip(grid, direction = "vertical"), xy = TRUE, na.rm = FALSE)
+  rm(grid)
   # change the name from "layer" to the parameter names
   names(data) <- c("range", "azimuth", param)
 

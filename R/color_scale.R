@@ -146,7 +146,7 @@ add_color_transparency <- function(color, alpha = 1) {
     class(mycol) <- class(color)
     return(mycol)
   } else if (inherits(color, "raster")) {
-    color@data@values <- mycol
+    color[] <- mycol
     return(color)
   } else {
     return(mycol)
