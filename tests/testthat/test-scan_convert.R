@@ -208,3 +208,46 @@ test_that(".scan_to_spdf() returns error on wrongly formed param argument",{
   )
   # TODO add coverage for crs mismatch between local crs and spdf crs
 })
+
+test_that("scan_to_spatraster() preserves raster templates", {
+  template <- terra::rast(nrows = 4, ncols = 5, xmin = 12.8, xmax = 12.9,
+    ymin = 56.3, ymax = 56.4, crs = "EPSG:4326")
+  terra::values(template) <- rep(c(NA_real_, 100), 10)
+  original <- terra::values(template)
+  scan <- scan_to_spatraster(example_scan, raster = template)
+  expect_true(terra::compareGeom(scan, template, lyrs = FALSE))
+  expect_equal(terra::values(template), original)
+  expect_equal(terra::ncell(scan), 20)
+  expect_false(all(is.na(terra::values(scan))))
+})
+
+test_that("scan_to_spatraster() warns for legacy CRS arguments", {
+  skip_if_not_installed("sp")
+  lifecycle::expect_deprecated(
+    scan_to_spatraster(example_scan, nx = 3, ny = 3, crs = sp::CRS("EPSG:4326"))
+  )
+})
+
+test_that("scan_to_spatraster() preserves values and grid from upstream master", {
+  # Generated with adokter/bioRad d3e03b48 using the bundled example data.
+  reference <- readRDS(test_path("fixtures", "spatial-master-d3e03b48.rds"))[["scan"]]
+  r <- scan_to_spatraster(example_scan, nx = 30, ny = 25)
+  values <- terra::values(r)
+  expected <- reference$values
+  # The old projection round trip chose either adjacent azimuth bin
+  # at exact bin boundaries, depending on the PROJ version/platform.
+  # Compare historical values only where that choice is unambiguous.
+  geo <- example_scan$geo
+  local_crs <- paste0("+proj=aeqd +lat_0=", geo$lat,
+    " +lon_0=", geo$lon, " +units=m")
+  xy <- sf::st_coordinates(bioRad:::.raster_points(r, local_crs))
+  azimuth <- (90 - atan2(xy[, 2], xy[, 1]) * 180 / pi) %% 360
+  bins <- azimuth / example_scan$geo$ascale
+  stable <- abs(bins - round(bins)) > 1e-8
+  values <- values[stable, , drop = FALSE]
+  expected <- expected[stable, , drop = FALSE]
+  expect_equal(values, expected, tolerance = 1e-8)
+  expect_equal(unname(as.vector(terra::ext(r))), reference$extent, tolerance = 1e-8)
+  expect_equal(unname(terra::res(r)), reference$res, tolerance = 1e-8)
+  expect_equal(names(r), reference$names)
+})

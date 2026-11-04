@@ -18,3 +18,16 @@ test_that("convert_legacy() renames certain data colnames", {
   expect_identical(convert_legacy(legacy_vp), example_vp)
   expect_identical(convert_legacy(legacy_vpts), example_vpts)
 })
+
+test_that("convert_legacy() preserves PPI data and geometry", {
+  skip_if_not_installed("raster")
+  skip_if_not_installed("sp")
+  modern <- project_as_ppi(example_scan, grid_size = 2000, range_max = 10000)
+  legacy <- modern
+  legacy$data <- methods::as(raster::brick(modern$data), "SpatialGridDataFrame")
+  lifecycle::expect_deprecated(converted <- convert_legacy(legacy))
+  expect_true(terra::compareGeom(converted$data, modern$data))
+  expect_equal(terra::values(converted$data), terra::values(modern$data))
+  expect_equal(converted$geo, modern$geo)
+  expect_s4_class(legacy$data, "SpatialGridDataFrame")
+})

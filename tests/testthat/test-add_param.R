@@ -15,7 +15,7 @@ make_synthetic_spatraster <- function(scan) {
 
 lowest_scan <- get_scan(pvol, 0.5)
 # Modern workflows run without the optional legacy packages. Compatibility
-# with RasterLayer inputs is tested separately in test-spatial-migration.R.
+# with RasterLayer inputs is tested below.
 synthetic_spatraster <- make_synthetic_spatraster(lowest_scan)
 synthetic_raster <- synthetic_spatraster
 
@@ -98,4 +98,36 @@ test_that("add_param() accepts a terra SpatRaster for a pvol", {
     function(s) "synthetic" %in% names(s$params),
     logical(1)
   )))
+})
+
+test_that("add_param() extracts geographic raster values in the correct CRS", {
+  dem <- terra::rast(nrows = 10, ncols = 10, xmin = 12, xmax = 14,
+    ymin = 55, ymax = 58, crs = "EPSG:4326")
+  terra::values(dem) <- 123
+  scan <- add_param(example_scan, dem, "HGHT")
+  points <- sf::st_transform(scan_to_sf(example_scan), 4326)
+  xy <- sf::st_coordinates(points)
+  inside <- xy[,1] > 12 & xy[,1] < 14 & xy[,2] > 55 & xy[,2] < 58
+  expect_true(any(inside))
+  expect_equal(as.vector(scan$params$HGHT)[inside], rep(123, sum(inside)))
+})
+
+test_that("add_param() warns for legacy raster arguments", {
+  skip_if_not_installed("raster")
+  template <- terra::rast(nrows = 3, ncols = 3, xmin = 12.8, xmax = 12.9,
+    ymin = 56.3, ymax = 56.4, crs = "EPSG:4326")
+  terra::values(template) <- 100
+  lifecycle::expect_deprecated(add_param(example_scan, raster::raster(template), "HGHT"))
+})
+
+test_that("add_param() preserves polar-volume extraction with legacy rasters", {
+  skip_if_not_installed("raster")
+  pvol <- read_pvolfile(system.file("extdata", "volume.h5", package = "bioRad"))
+  pvol$scans <- pvol$scans[1:2]
+  dem <- scan_to_spatraster(pvol$scans[[1]], nx = 10, ny = 10, param = "DBZH")
+  terra::values(dem) <- seq_len(terra::ncell(dem))
+  modern <- add_param(pvol, dem, "HGHT")
+  lifecycle::expect_deprecated(legacy <- add_param(pvol, raster::raster(dem), "HGHT"))
+  expect_equal(lapply(legacy$scans, function(x) x$params$HGHT),
+    lapply(modern$scans, function(x) x$params$HGHT))
 })

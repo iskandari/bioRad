@@ -530,3 +530,28 @@ test_that("ground reference with a flat sea-level DEM equals the sea reference",
   finite <- is.finite(vals_sea)
   expect_equal(vals_ground[finite], vals_sea[finite])
 })
+
+test_that("integrate_to_ppi() preserves values and grid from upstream master", {
+  # Generated with adokter/bioRad d3e03b48 using the bundled example data.
+  reference <- readRDS(test_path("fixtures", "spatial-master-d3e03b48.rds"))[["integrated"]]
+  pvol <- read_pvolfile(system.file("extdata", "volume.h5", package = "bioRad"))
+  r <- integrate_to_ppi(pvol, example_vp, nx = 20, ny = 20)$data
+  values <- terra::values(r)
+  expected <- reference$values
+  # The old projection round trip chose either adjacent azimuth bin
+  # at exact bin boundaries, depending on the PROJ version/platform.
+  # Compare historical values only where that choice is unambiguous.
+  geo <- pvol$geo
+  local_crs <- paste0("+proj=aeqd +lat_0=", geo$lat,
+    " +lon_0=", geo$lon, " +units=m")
+  xy <- sf::st_coordinates(bioRad:::.raster_points(r, local_crs))
+  azimuth <- (90 - atan2(xy[, 2], xy[, 1]) * 180 / pi) %% 360
+  bins <- azimuth / example_scan$geo$ascale
+  stable <- abs(bins - round(bins)) > 1e-8
+  values <- values[stable, , drop = FALSE]
+  expected <- expected[stable, , drop = FALSE]
+  expect_equal(values, expected, tolerance = 1e-8)
+  expect_equal(unname(as.vector(terra::ext(r))), reference$extent, tolerance = 1e-8)
+  expect_equal(unname(terra::res(r)), reference$res, tolerance = 1e-8)
+  expect_equal(names(r), reference$names)
+})

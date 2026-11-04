@@ -78,3 +78,14 @@ test_that("calculate_param() works with if_else", {
     calculate_param(example_scan, DBZH=if_else(c(RHOHV)>.95, NA, c(DBZH)) )
   )
 })
+
+test_that("calculate_param() supports legacy PPI data", {
+  skip_if_not_installed("raster")
+  skip_if_not_installed("sp")
+  modern <- project_as_ppi(example_scan, grid_size = 2000, range_max = 10000)
+  legacy <- modern
+  legacy$data <- methods::as(raster::brick(modern$data), "SpatialGridDataFrame")
+  lifecycle::expect_deprecated(calculated <- calculate_param(legacy, doubled = DBZH * 2))
+  expect_equal(terra::values(calculated$data$doubled), terra::values(modern$data$DBZH) * 2,
+    ignore_attr = TRUE)
+})

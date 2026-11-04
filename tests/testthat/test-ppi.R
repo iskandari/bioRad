@@ -49,3 +49,13 @@ test_that("ppi methods support terra SpatRaster data", {
     ignore_attr = TRUE
   )
 })
+
+test_that("[.ppi supports legacy data", {
+  skip_if_not_installed("raster")
+  skip_if_not_installed("sp")
+  modern <- project_as_ppi(example_scan, grid_size = 2000, range_max = 10000)
+  legacy <- modern
+  legacy$data <- methods::as(raster::brick(modern$data), "SpatialGridDataFrame")
+  lifecycle::expect_deprecated(subset <- legacy[1:2])
+  expect_equal(names(subset$data), names(modern$data)[1:2])
+})

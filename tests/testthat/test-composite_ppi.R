@@ -111,3 +111,23 @@ test_that("composite_ppi() returns terra SpatRaster data", {
   expect_s4_class(ppi$data, "SpatRaster")
   expect_equal(names(ppi$data), "DBZH")
 })
+
+test_that("composite_ppi() preserves missing values, coverage and weighted means", {
+  r <- terra::rast(nrows = 3, ncols = 3, xmin = -1500, xmax = 1500,
+    ymin = -1500, ymax = 1500, crs = "+proj=aeqd +lat_0=56 +lon_0=13 +datum=WGS84")
+  terra::values(r) <- c(NA, rep(2, 8))
+  names(r) <- "DBZH"
+  a <- structure(list(data = r, geo = list(lon = 13, lat = 56, elangle = .5,
+    bbox = bioRad:::.raster_bbox(r))), class = "ppi")
+  b <- a
+  b$data <- r * 2
+  for (method in c("min", "max", "mean", "idw")) {
+    out <- composite_ppi(list(a, b), raster = r, method = method, coverage = TRUE)
+    expected <- switch(method, min = 2, max = 4, mean = 3, idw = 3)
+    expect_equal(as.vector(terra::values(out$data$DBZH)), c(NA, rep(expected, 8)))
+    expect_equal(as.vector(terra::values(out$data$coverage)), rep(2, 9))
+  }
+  one <- composite_ppi(list(a), raster = r, method = "mean")
+  expect_equal(terra::values(one$data), terra::values(r))
+  expect_equal(terra::values(a$data), terra::values(r))
+})
