@@ -85,7 +85,23 @@ test_that("spatial values and grids match upstream master before migration", {
   )
   for (name in names(current)) {
     r <- current[[name]]
-    expect_equal(terra::values(r), reference[[name]]$values, tolerance = 1e-8)
+    values <- terra::values(r)
+    expected <- reference[[name]]$values
+    {
+      # The old projection round trip chose either adjacent azimuth bin
+      # at exact bin boundaries, depending on the PROJ version/platform.
+      # Compare historical values only where that choice is unambiguous.
+      geo <- if (name == "integrated") pvol$geo else example_scan$geo
+      local_crs <- paste0("+proj=aeqd +lat_0=", geo$lat,
+        " +lon_0=", geo$lon, " +units=m")
+      xy <- sf::st_coordinates(bioRad:::.raster_points(r, local_crs))
+      azimuth <- (90 - atan2(xy[, 2], xy[, 1]) * 180 / pi) %% 360
+      bins <- azimuth / example_scan$geo$ascale
+      stable <- abs(bins - round(bins)) > 1e-8
+      values <- values[stable, , drop = FALSE]
+      expected <- expected[stable, , drop = FALSE]
+    }
+    expect_equal(values, expected, tolerance = 1e-8)
     expect_equal(unname(as.vector(terra::ext(r))), reference[[name]]$extent, tolerance = 1e-8)
     expect_equal(unname(terra::res(r)), reference[[name]]$res, tolerance = 1e-8)
     expect_equal(names(r), reference[[name]]$names)
@@ -102,4 +118,30 @@ test_that("legacy elevation rasters preserve polar-volume extraction", {
   lifecycle::expect_deprecated(legacy <- add_param(pvol, raster::raster(dem), "HGHT"))
   expect_equal(lapply(legacy$scans, function(x) x$params$HGHT),
     lapply(modern$scans, function(x) x$params$HGHT))
+})
+
+
+test_that("projection round-off does not change requested PPI grids", {
+  original <- project_as_ppi(example_scan, grid_size = 2000, range_max = 20000)
+  transform <- bioRad:::wgs_to_proj
+  local_mocked_bindings(wgs_to_proj = function(...) {
+    points <- transform(...)
+    sf::st_geometry(points) <- sf::st_geometry(points) + c(-1e-9, 1e-9)
+    points
+  }, .package = "bioRad")
+  perturbed <- project_as_ppi(example_scan, grid_size = 2000, range_max = 20000)
+  expect_equal(dim(perturbed$data), c(20L, 20L, 5L))
+  expect_equal(as.vector(terra::ext(perturbed$data)),
+    as.vector(terra::ext(original$data)))
+  expect_equal(terra::values(perturbed$data), terra::values(original$data))
+})
+
+
+test_that("azimuth-bin boundaries are stable under projection round-off", {
+  angles <- c(0, 45, 225, 359, 360)
+  sample <- function(delta) bioRad:::polar_to_index(
+    data.frame(range = 1000, azim = angles + delta), azimbin = 1)$col
+  expect_equal(sample(0), c(1, 46, 226, 360, 1))
+  expect_equal(sample(-1e-12), sample(0))
+  expect_equal(sample(1e-12), sample(0))
 })

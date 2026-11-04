@@ -52,7 +52,8 @@ test_that("map() returns error on incorrect parameters", {
 
 test_that("map renders Web Mercator tiles without legacy raster reprojection", {
   skip_if_no_mapping()
-  local_mocked_bindings(rosm_image = function(...) {
+  local_mocked_bindings(rosm_image = function(..., type) {
+    expect_identical(type, "osm")
     img <- array(1, dim = c(2, 2, 3))
     attr(img, "bbox") <- matrix(c(1400000, 7500000, 1500000, 7700000), nrow = 2,
       dimnames = list(c("x", "y"), c("min", "max")))

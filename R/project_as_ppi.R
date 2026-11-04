@@ -101,8 +101,17 @@ sample_polar <- function(param, grid_size, range_max, project, ylim, xlim, k = 4
     if (!is.null(ylim)) bboxlatlon["lat", ] <- ylim
     if (!is.null(xlim)) bboxlatlon["lon", ] <- xlim
     bbox <- sf::st_coordinates(wgs_to_proj(bboxlatlon["lon", ], bboxlatlon["lat", ], proj4string))
+    # Without geographic limits, retain the exact requested projected bounds.
+    # A projection round trip can otherwise add a cell through ceiling().
+    if (is.null(xlim) && is.null(ylim)) {
+      bbox <- cbind(c(-range_max, range_max), c(-range_max, range_max))
+    }
     offset <- apply(bbox, 2, min)
-    dims <- ceiling(apply(bbox, 2, function(z) diff(range(z))) / grid_size)
+    cells <- apply(bbox, 2, function(z) diff(range(z))) / grid_size
+    nearest <- round(cells)
+    close <- abs(cells - nearest) < 1e-10
+    cells[close] <- nearest[close]
+    dims <- ceiling(cells)
     output <- terra::rast(ncols = dims[1], nrows = dims[2],
       xmin = offset[1] - grid_size / 2, xmax = offset[1] + (dims[1] - .5) * grid_size,
       ymin = offset[2] - grid_size / 2, ymax = offset[2] + (dims[2] - .5) * grid_size,
@@ -164,6 +173,11 @@ safe_subset <- function(data, indexx, indexy) {
 
 polar_to_index <- function(coords_polar, rangebin = 1, azimbin = 1, rangestart = 0, azimstart = 0) {
   row <- floor(1 + (coords_polar$range - rangestart) / c(rangebin))
-  col <- floor(1 + ((coords_polar$azim - azimstart + 360) %% 360) / c(azimbin))
+  azimuth_bin <- ((coords_polar$azim - azimstart + 360) %% 360) / azimbin
+  # Give points on bin boundaries the same bin across PROJ/platform round-off.
+  nearest <- round(azimuth_bin)
+  close <- abs(azimuth_bin - nearest) < 1e-10
+  azimuth_bin[close] <- nearest[close]
+  col <- 1 + floor(azimuth_bin %% (360 / azimbin))
   data.frame(row = row, col = col)
 }

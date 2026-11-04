@@ -15,11 +15,16 @@
   newly created PPIs.
 * Retained optional `ggspatial`, `prettymapr`, and `rosm` basemap support.
   Maps use Web Mercator tiles without legacy raster reprojection.
-  Removed obsolete `proj4` CI setup.
+  Removed obsolete `proj4` CI setup. The default basemap is now OpenStreetMap;
+  CARTO basemaps require an API key with current mapping dependencies.
 * Compatibility wrappers are retained for the transition; no removal release
   is scheduled yet. They require the relevant legacy packages to be installed.
 * Raster templates retain all cells, including missing values. `add_param()`
   now extracts in the input raster's CRS, including geographic DEMs.
+
+* PPI grids no longer gain an extra row or column from projection round-off.
+  Values at exact azimuth-bin boundaries can differ from older versions,
+  whose bin selection depended on the platform and projection library.
 
 ## Other changes
 
